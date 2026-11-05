@@ -1,0 +1,62 @@
+# Локальный стенд: Postgres-хранилище + Airflow.
+#   docker compose up -d
+#   UI: http://localhost:8080  (логин/пароль печатает контейнер airflow при старте)
+#
+# Порты: 8080 — Airflow, 5433 — Postgres снаружи (внутри 5432).
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: marketplace-dwh
+    environment:
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: marketplace
+      POSTGRES_DB: warehouse
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketplace -d warehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  airflow:
+    image: apache/airflow:2.9.3-python3.11
+    container_name: marketplace-airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+      # провайдер postgres в образе есть, но pandas/psycopg2 ставим явно
+      _PIP_ADDITIONAL_REQUIREMENTS: "pandas==2.2.2 psycopg2-binary==2.9.9"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - airflow_home:/opt/airflow
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow connections delete dwh || true &&
+      airflow connections add dwh
+        --conn-type postgres
+        --conn-host postgres
+        --conn-port 5432
+        --conn-login marketplace
+        --conn-password marketplace
+        --conn-schema warehouse &&
+      airflow variables set marketplace_alerts_webhook '' &&
+      exec airflow standalone
+      "
+
+volumes:
+  pgdata:
+  airflow_home:

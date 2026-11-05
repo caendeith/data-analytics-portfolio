@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A/B-тест: порог бесплатной доставки — разбор</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#111827; --ink2:#4b5563; --ink3:#6b7280;
+    --line:#e5e7eb; --ctrl:#64748b; --treat:#4f46e5; --good:#059669; --bad:#dc2626;
+    --warn:#b45309; --warnbg:#fffbeb; --warnline:#fcd34d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+  header.top{margin-bottom:28px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  h1{font-size:30px;line-height:1.25;margin:10px 0 12px;letter-spacing:-.02em}
+  .sub{color:var(--ink2);font-size:15px;max-width:820px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .badge{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);
+    background:#fff;color:var(--ink2);font-weight:500}
+  .badge.synth{border-color:#c7d2fe;background:#eef2ff;color:#3730a3}
+
+  .verdict{border-radius:14px;padding:20px 22px;margin:26px 0 8px;
+    background:var(--warnbg);border:1px solid var(--warnline)}
+  .verdict .tag{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--warn)}
+  .verdict h2{margin:8px 0 8px;font-size:21px;letter-spacing:-.01em}
+  .verdict p{margin:0;color:#78350f;font-size:14.5px;max-width:900px}
+
+  section{margin-top:44px}
+  h2.sec{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);
+    font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  h2.sec .n{display:inline-flex;width:22px;height:22px;border-radius:6px;background:#111827;color:#fff;
+    align-items:center;justify-content:center;font-size:11px;letter-spacing:0}
+  h3{font-size:17px;margin:22px 0 10px;letter-spacing:-.01em}
+  p{margin:10px 0}
+  .lead{font-size:15.5px;color:var(--ink2)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:900px){.g3,.g2{grid-template-columns:1fr}}
+
+  .kpi .label{font-size:12.5px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .kpi .row{display:flex;align-items:baseline;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .kpi .ctrl{color:var(--ink3);font-size:14px;font-variant-numeric:tabular-nums}
+  .kpi .arrow{color:#cbd5e1}
+  .kpi .treat{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .kpi .delta{margin-top:8px;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .kpi .ci{color:var(--ink3);font-size:12.5px;margin-top:2px;font-variant-numeric:tabular-nums}
+  .up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--ink3)}
+  .sig{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px;
+    vertical-align:1px}
+  .sig.yes{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+  .sig.no{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);
+    font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:10px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafafa}
+  .role{font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap}
+  .role.primary{background:#eef2ff;color:#3730a3}
+  .role.secondary{background:#f3f4f6;color:#4b5563}
+  .role.guard{background:#fff7ed;color:#9a3412}
+
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px 12px}
+  .chart .ct{font-size:14px;font-weight:650;margin-bottom:2px}
+  .chart .cs{font-size:12.5px;color:var(--ink3);margin-bottom:12px}
+  .legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink2);margin:2px 0 6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .ax{font-size:11px;fill:#9ca3af}
+  .gl{stroke:#eef0f3;stroke-width:1}
+
+  .note{border-left:3px solid #c7d2fe;background:#f8faff;padding:12px 16px;border-radius:0 10px 10px 0;
+    font-size:14px;color:#313e5a;margin:14px 0}
+  .note b{color:#1e293b}
+  ul{margin:10px 0;padding-left:20px}
+  li{margin:6px 0;color:var(--ink2)}
+  li b{color:var(--ink)}
+  code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    background:#f3f4f6;padding:1.5px 6px;border-radius:5px;color:#1f2937}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink3);font-size:12.5px}
+  .mono{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Портфолио · продуктовый аналитик · кейс 2</div>
+  <h1>A/B-тест: снижение порога бесплатной доставки с 3&nbsp;000&nbsp;₽ до 2&nbsp;000&nbsp;₽</h1>
+  <div class="sub">
+    Полный цикл эксперимента: дизайн и расчёт мощности, проверка SRM, тест первичной метрики,
+    контроль guardrail-метрик, разбор механизма, сегменты и решение по раскатке.
+  </div>
+  <div class="badges">
+    <span class="badge synth">данные синтетические</span>
+    <span class="badge" id="b-period"></span>
+    <span class="badge" id="b-sessions"></span>
+    <span class="badge">Python · scipy · numpy</span>
+    <span class="badge">воспроизводится: <code>python build.py</code></span>
+  </div>
+</header>
+
+<div class="verdict" id="verdict">
+  <div class="tag">Решение по раскатке</div>
+  <h2 id="v-head"></h2>
+  <p id="v-body"></p>
+</div>
+
+<!-- ============================================================ 1 -->
+<section>
+  <h2 class="sec"><span class="n">1</span> Что проверяли</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Гипотеза</h3>
+      <p class="lead" style="margin-top:0">
+        Если снизить порог бесплатной доставки до 2&nbsp;000&nbsp;₽, часть клиентов с дешёвыми корзинами,
+        которым сейчас доставка обходится в 250&nbsp;₽, передумает уходить из корзины — конверсия сессии
+        в заказ вырастет.
+      </p>
+      <p style="margin-bottom:0;font-size:14px;color:var(--ink3)">
+        Проверяемая механика: бесплатная доставка перестаёт быть «наградой за крупный чек» и становится
+        универсальной — эффект должен быть сильнее на <b>малых</b> корзинах, где 250&nbsp;₽ заметны.
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Метрики до старта</h3>
+      <table>
+        <thead><tr><th>Метрика</th><th>Роль</th></tr></thead>
+        <tbody>
+          <tr><td>Конверсия сессии в заказ (CR)</td><td><span class="role primary">первичная</span></td></tr>
+          <tr><td>Выручка на сессию (ARPU)</td><td><span class="role secondary">вторичная</span></td></tr>
+          <tr><td>Средний чек (AOV)</td><td><span class="role secondary">вторичная</span></td></tr>
+          <tr><td>Чистая маржа на сессию</td><td><span class="role guard">решающая</span></td></tr>
+          <tr><td>Доля возвратов, отмен</td><td><span class="role guard">guardrail</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><div class="kpi">
+      <div class="label">Размер выборки</div>
+      <div class="row"><div class="treat mono" id="d-sessions"></div></div>
+      <div class="ci" id="d-split"></div>
+    </div></div>
+    <div class="card"><div class="kpi">
+      <div class="label">MDE при этих объёмах</div>
+      <div class="row"><div class="treat mono" id="d-mde"></div></div>
+      <div class="ci">минимальный эффект, который тест ловит с мощностью 80%</div>
+    </div></div>
+    <div class="card"><div class="kpi">
+      <div class="label">Проверка SRM</div>
+      <div class="row"><div class="treat mono" id="d-srm"></div></div>
+      <div class="ci" id="d-srmnote"></div>
+    </div></div>
+  </div>
+
+  <div class="note" id="d-power"></div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section>
+  <h2 class="sec"><span class="n">2</span> Результат</h2>
+  <p class="lead" style="margin-top:12px" id="r-lead"></p>
+
+  <div class="grid g3" style="margin-top:16px" id="kpis"></div>
+
+  <div class="card" style="margin-top:16px">
+    <table>
+      <thead>
+        <tr>
+          <th>Метрика</th><th>Контроль</th><th>Тест</th><th>Δ</th>
+          <th>95% CI на Δ</th><th>p</th><th>Значимо</th>
+        </tr>
+      </thead>
+      <tbody id="mt-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section>
+  <h2 class="sec"><span class="n">3</span> Динамика и механизм</h2>
+
+  <div class="chart" style="margin-top:14px">
+    <div class="ct">Конверсия в заказ по дням</div>
+    <div class="cs">Если бы эффекта не было, линии шли бы вплотную. Разрыв стабилен с 3-го дня — это не всплеск.</div>
+    <div class="legend">
+      <span><i style="background:#64748b"></i>контроль</span>
+      <span><i style="background:#4f46e5"></i>тест</span>
+    </div>
+    <div id="chDaily"></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="chart">
+      <div class="ct">Распределение сумм заказов</div>
+      <div class="cs">Откуда взялся прирост: тест добирает заказы в дешёвых корзинах.</div>
+      <div class="legend">
+        <span><i style="background:#94a3b8"></i>контроль</span>
+        <span><i style="background:#4f46e5"></i>тест</span>
+      </div>
+      <div id="chHist"></div>
+    </div>
+    <div class="chart">
+      <div class="ct">Субсидия доставки по бакетам, ₽</div>
+      <div class="cs">Порог 2&nbsp;000&nbsp;₽ включил бесплатную доставку там, где раньше её не было.</div>
+      <div class="legend">
+        <span><i style="background:#94a3b8"></i>контроль</span>
+        <span><i style="background:#4f46e5"></i>тест</span>
+      </div>
+      <div id="chSubs"></div>
+    </div>
+  </div>
+
+  <div class="chart" style="margin-top:14px">
+    <div class="ct">Почему рост выручки не превратился в рост прибыли</div>
+    <div class="cs">Разложение Δ чистой маржи на сессию по компонентам, ₽.</div>
+    <div id="chWater"></div>
+  </div>
+
+  <div class="note" id="mechanism-note"></div>
+</section>
+
+<!-- ============================================================ 4 -->
+<section>
+  <h2 class="sec"><span class="n">4</span> Сегменты</h2>
+  <p class="lead" style="margin-top:12px" id="seg-lead"></p>
+  <div class="chart" style="margin-top:14px">
+    <div class="ct">Относительный прирост конверсии по сегментам, %</div>
+    <div class="cs">Точка — оценка эффекта, отрезок — 95% доверительный интервал. Пересечение нуля = нет доказанного эффекта.</div>
+    <div id="chForest"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <table>
+      <thead><tr><th>Разрез</th><th>Сегмент</th><th>Контроль</th><th>Тест</th><th>Δ отн.</th><th>p</th><th>p с поправкой</th></tr></thead>
+      <tbody id="seg-body"></tbody>
+    </table>
+  </div>
+  <div class="note" id="seg-note"></div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section>
+  <h2 class="sec"><span class="n">5</span> Чему этот тест не даёт верить</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Ограничения</h3>
+      <ul id="limits"></ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Что бы я сделал иначе</h3>
+      <ul id="better"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6 -->
+<section>
+  <h2 class="sec"><span class="n">6</span> Решение и следующий шаг</h2>
+  <div class="grid g3" style="margin-top:14px" id="steps"></div>
+  <div class="note" id="final-note"></div>
+</section>
+
+<footer>
+  <p style="margin:0 0 6px">
+    <b>Данные синтетические.</b> 300 000 сессий сгенерированы с фиксированным seed
+    (<code>np.random.default_rng(20261104)</code>) по механике «эффект сильнее на малых корзинах».
+    Все числа на странице вычислены из этих данных, а не вписаны руками.
+  </p>
+  <p style="margin:0">
+    Стек: Python 3.11, numpy, scipy (двухвыборочный z-тест для долей, Welch t-test для средних,
+    χ²-тест для SRM), рукописный SVG без внешних библиотек.
+    Воспроизведение: <code>python build.py</code> → <code>results.json</code>, <code>data/*.csv</code>, эта страница.
+  </p>
+</footer>
+
+</div>
+
+<script>
+const R = __RESULTS__;
+const A = R.meta.assumptions;
+const $ = (s) => document.querySelector(s);
+
+/* ---------- форматирование ---------- */
+const nf = (d=0) => new Intl.NumberFormat('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const num = (v,d=0) => nf(d).format(v);
+const rub = (v,d=0) => num(v,d) + ' ₽';
+const pct = (v,d=2) => (v*100).toFixed(d).replace('.',',') + '%';
+const pp  = (v,d=2) => (v*100>=0?'+':'−') + Math.abs(v*100).toFixed(d).replace('.',',') + ' п.п.';
+const sgn = (v,d=2) => (v>=0?'+':'−') + Math.abs(v).toFixed(d).replace('.',',');
+const pv = (p) => p < 0.0001 ? '< 0,0001' : p.toFixed(4).replace('.',',');
+
+/* ---------- хедер ---------- */
+$('#b-period').textContent = R.meta.period.from + ' — ' + R.meta.period.to + ' · ' + R.meta.period.days + ' дней';
+$('#b-sessions').textContent = num(R.meta.sessions) + ' сессий';
+
+/* ---------- вердикт ---------- */
+const cr = R.primary, arpu = R.arpu, aov = R.aov, net = R.net, sub = R.subsidy, ret = R.returns;
+const VERDICT_HEAD = {
+  ship:      'Раскатывать можно: прибыль растёт вместе с выручкой',
+  dont_ship: 'Раскатывать нельзя: тест ухудшил прибыль',
+  iterate:   'Раскатывать в текущем виде нельзя: выручка растёт, прибыль — нет',
+  no_effect: 'Эффекта на первичную метрику нет — раскатывать нечего',
+};
+$('#v-head').textContent = VERDICT_HEAD[R.verdict] || VERDICT_HEAD.iterate;
+$('#v-body').innerHTML =
+  'Конверсия выросла на <b>' + sgn(cr.diff*100) + ' п.п.</b> (' + sgn(cr.rel*100,1) + '% относительно, p = ' + pv(cr.p) + '), ' +
+  'выручка на сессию — на <b>' + sgn(arpu.rel*100,1) + '%</b> (p = ' + pv(arpu.p) + '), и это статистически надёжно. ' +
+  'Но субсидия доставки выросла на <b>' + sgn(sub.rel*100,1) + '%</b>, что съело весь прирост: ' +
+  'чистая маржа на сессию изменилась на <b>' + sgn(net.diff,2) + ' ₽</b> (p = ' + pv(net.p) + '), ' +
+  'то есть мы не можем утверждать даже что она не упала. Гипотеза про конверсию подтвердилась, гипотеза про деньги — нет.';
+
+/* ---------- 1. дизайн ---------- */
+$('#d-sessions').textContent = num(R.meta.sessions);
+$('#d-split').textContent = 'контроль ' + num(R.meta.n_control) + ' · тест ' + num(R.meta.n_treat);
+$('#d-mde').textContent = '±' + (R.meta.mde_rel*100).toFixed(1).replace('.',',') + '%';
+$('#d-srm').innerHTML = R.meta.srm.ok
+  ? '<span class="up">OK</span>'
+  : '<span class="down">проблема</span>';
+$('#d-srmnote').textContent = 'χ² = ' + R.meta.srm.chi2.toFixed(2).replace('.',',') +
+  ', p = ' + R.meta.srm.p.toFixed(3).replace('.',',') + ' — деление трафика корректное';
+
+const nreq = Math.ceil(R.meta.n_required_5pct);
+$('#d-power').innerHTML =
+  'Тест спланирован заранее: для эффекта <b>+5% относительно</b> при базовой конверсии ' + pct(cr.control) +
+  ' нужно <b>' + num(nreq) + '</b> сессий на плечо (α = 0,05, мощность 80%). В тесте набрано ' +
+  '<b>' + num(Math.min(R.meta.n_control, R.meta.n_treat)) + '</b> — этого достаточно, чтобы уверенно ловить эффекты ' +
+  'от <b>±' + (R.meta.mde_rel*100).toFixed(1).replace('.',',') + '%</b> относительно. ' +
+  'Поэтому отсутствие значимости на AOV и на прибыли — это не «не хватило данных», а содержательный результат.';
+
+/* ---------- 2. KPI ---------- */
+const KPI = [
+  {t:'Конверсия в заказ', d:cr,  kind:'pct', role:'первичная', invert:false},
+  {t:'Выручка на сессию', d:arpu, kind:'rub', role:'вторичная', invert:false},
+  {t:'Средний чек',       d:aov, kind:'rub', role:'вторичная', invert:false},
+  {t:'Чистая маржа на сессию', d:net, kind:'rub', role:'решающая', invert:false},
+  {t:'Субсидия доставки', d:sub, kind:'rub', role:'guardrail', invert:true},
+  {t:'Доля возвратов',    d:ret, kind:'pct', role:'guardrail', invert:true},
+];
+const fmt = (v,kind) => kind==='rub' ? rub(v, v<10?2:0) : pct(v,2);
+$('#kpis').innerHTML = KPI.map(k => {
+  const sig = k.d.p < 0.05;
+  const goodDir = k.invert ? k.d.diff < 0 : k.d.diff > 0;
+  const cls = !sig ? 'flat' : (goodDir ? 'up' : 'down');
+  const ci = (k.d.ci_low !== undefined)
+    ? 'CI: [' + sgn(k.d.ci_low,2) + '; ' + sgn(k.d.ci_high,2) + ']' + (k.kind==='pct'?' п.п.':' ₽')
+    : '';
+  return '<div class="card kpi">' +
+    '<div class="label">' + k.t + '</div>' +
+    '<div class="row">' +
+      '<span class="ctrl mono">' + fmt(k.d.control,k.kind) + '</span>' +
+      '<span class="arrow">→</span>' +
+      '<span class="treat mono">' + fmt(k.d.treat,k.kind) + '</span>' +
+    '</div>' +
+    '<div class="delta ' + cls + '">' + sgn(k.d.diff*100,2) + ' п.п. (' + sgn(k.d.rel*100,1) + '%)' +
+      '<span class="sig ' + (sig?'yes':'no') + '">' + (sig?'значимо':'не значимо') + '</span></div>' +
+    '<div class="ci">' + ci + ' · p = ' + pv(k.d.p) + '</div>' +
+  '</div>';
+}).join('');
+
+/* ---------- 2. таблица ---------- */
+const rows = [
+  ['Конверсия в заказ (CR)', 'primary', cr, 'pct'],
+  ['Выручка на сессию (ARPU)', 'secondary', arpu, 'rub'],
+  ['Средний чек (AOV)', 'secondary', aov, 'rub'],
+  ['Чистая маржа на сессию', 'guard', net, 'rub'],
+  ['Субсидия доставки', 'guard', sub, 'rub'],
+  ['Доля возвратов', 'guard', ret, 'pct'],
+];
+const roleName = {primary:'первичная', secondary:'вторичная', guard:'guardrail'};
+$('#mt-body').innerHTML = rows.map(([t,role,d,kind]) => {
+  const sig = d.p < 0.05;
+  const f = v => kind==='rub' ? rub(v, v<10?2:0) : pct(v,2);
+  const ci = '[' + sgn(d.ci_low, kind==='pct'?2:1) + '; ' + sgn(d.ci_high, kind==='pct'?2:1) + ']';
+  return '<tr>' +
+    '<td>' + t + ' <span class="role ' + role + '">' + roleName[role] + '</span></td>' +
+    '<td class="num">' + f(d.control) + '</td>' +
+    '<td class="num">' + f(d.treat) + '</td>' +
+    '<td class="num">' + (sig ? (d.diff>=0?'<span class="up">':'<span class="down">') : '<span class="flat">') +
+      sgn(d.diff, kind==='pct'?2:1) + '</span></td>' +
+    '<td class="num">' + ci + '</td>' +
+    '<td class="num">' + pv(d.p) + '</td>' +
+    '<td><span class="sig ' + (sig?'yes':'no') + '">' + (sig?'да':'нет') + '</span></td>' +
+  '</tr>';
+}).join('');
+
+$('#r-lead').innerHTML =
+  'Первичная метрика выросла значимо и предсказуемо по размеру: <b>' + pp(cr.diff) + '</b>. ' +
+  'Вторичная выручка на сессию тоже выросла. Но средний чек просел на ' + sgn(aov.diff,1) + ' ₽ ' +
+  '(p = ' + pv(aov.p) + ' — формально не значимо, хотя направление ожидаемое), и этого хватает, чтобы ' +
+  'прибыль не сдвинулась.';
+
+/* ---------- SVG-хелперы ---------- */
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const tx=(x,y,s,cls='ax',anchor='start')=>{const e=el('text',{x,y,'text-anchor':anchor,class:cls});e.textContent=s;return e;};
+
+/* ---------- 3. CR по дням ---------- */
+(function(){
+  const W=1080,H=280,L=52,Rr=16,T=14,B=34;
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H});
+  const d=R.daily;
+  const all=d.flatMap(x=>[x.control.cr,x.treat.cr]);
+  const lo=Math.min(...all), hi=Math.max(...all);
+  const pad=(hi-lo)*0.18||0.002;
+  const y0=lo-pad, y1=hi+pad;
+  const X=i=>L+(W-L-Rr)*(i/(d.length-1));
+  const Y=v=>T+(H-T-B)*(1-(v-y0)/(y1-y0));
+  for(let g=0;g<=4;g++){
+    const v=y0+(y1-y0)*g/4, y=Y(v);
+    svg.append(el('line',{x1:L,x2:W-Rr,y1:y,y2:y,class:'gl'}));
+    svg.append(tx(L-8,y+4,pct(v,1),'ax','end'));
+  }
+  d.forEach((row,i)=>{
+    const x=X(i), lbl=row.date.slice(8,10)+'.'+row.date.slice(5,7);
+    if(i%2===0||i===d.length-1) svg.append(tx(x,H-12,lbl,'ax','middle'));
+  });
+  const path=(key)=>d.map((row,i)=>(i?'L':'M')+X(i)+' '+Y(row[key].cr)).join(' ');
+  svg.append(el('path',{d:path('control'),fill:'none',stroke:'#64748b','stroke-width':2,'stroke-linejoin':'round'}));
+  svg.append(el('path',{d:path('treat'),fill:'none',stroke:'#4f46e5','stroke-width':2.4,'stroke-linejoin':'round'}));
+  d.forEach((row,i)=>{
+    svg.append(el('circle',{cx:X(i),cy:Y(row.control.cr),r:2.6,fill:'#64748b'}));
+    svg.append(el('circle',{cx:X(i),cy:Y(row.treat.cr),r:2.8,fill:'#4f46e5'}));
+  });
+  svg.append(tx(W-Rr, Y(d[d.length-1].treat.cr)-10, pct(d[d.length-1].treat.cr), 'ax','end'));
+  $('#chDaily').append(svg);
+})();
+
+/* ---------- 3. распределение чеков ---------- */
+(function(){
+  const W=1080,H=250,L=54,Rr=14,T=12,B=44;
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H});
+  const c=R.hist.find(h=>h.arm==='control').counts;
+  const t=R.hist.find(h=>h.arm==='treat').counts;
+  const max=Math.max(...c,...t);
+  const Y=v=>T+(H-T-B)*(1-v/max);
+  for(let g=0;g<=4;g++){
+    const v=max*g/4, y=Y(v);
+    svg.append(el('line',{x1:L,x2:W-Rr,y1:y,y2:y,class:'gl'}));
+    svg.append(tx(L-8,y+4,num(v),'ax','end'));
+  }
+  const bw=(W-L-Rr)/c.length, inner=bw*0.34;
+  c.forEach((_,i)=>{
+    const x=L+bw*i;
+    svg.append(el('rect',{x:x+bw*0.12,y:Y(c[i]),width:inner,height:H-T-B-(Y(c[i])-T),fill:'#94a3b8',rx:2}));
+    svg.append(el('rect',{x:x+bw*0.12+inner+2,y:Y(t[i]),width:inner,height:H-T-B-(Y(t[i])-T),fill:'#4f46e5',rx:2}));
+    svg.append(tx(x+bw/2,H-26,R.hist_labels[i],'ax','middle'));
+  });
+  $('#chHist').append(svg);
+})();
+
+/* ---------- 3. субсидия по бакетам ---------- */
+(function(){
+  const W=1080,H=250,L=64,Rr=14,T=12,B=44;
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H});
+  const c=R.subs_by_bucket.find(h=>h.arm==='control').rub;
+  const t=R.subs_by_bucket.find(h=>h.arm==='treat').rub;
+  const max=Math.max(...c,...t)||1;
+  const Y=v=>T+(H-T-B)*(1-v/max);
+  for(let g=0;g<=4;g++){
+    const v=max*g/4, y=Y(v);
+    svg.append(el('line',{x1:L,x2:W-Rr,y1:y,y2:y,class:'gl'}));
+    svg.append(tx(L-8,y+4,num(v/1000,0)+'к','ax','end'));
+  }
+  const bw=(W-L-Rr)/c.length, inner=bw*0.34;
+  c.forEach((_,i)=>{
+    const x=L+bw*i;
+    svg.append(el('rect',{x:x+bw*0.12,y:Y(c[i]),width:inner,height:H-T-B-(Y(c[i])-T),fill:'#94a3b8',rx:2}));
+    svg.append(el('rect',{x:x+bw*0.12+inner+2,y:Y(t[i]),width:inner,height:H-T-B-(Y(t[i])-T),fill:'#4f46e5',rx:2}));
+    svg.append(tx(x+bw/2,H-26,R.hist_labels[i],'ax','middle'));
+  });
+  $('#chSubs').append(svg);
+})();
+
+/* ---------- 3. разложение прибыли ---------- */
+(function(){
+  const marginGain = A.gross_margin * arpu.diff;
+  const subLoss = -sub.diff;
+  const retLoss = -A.return_handling * R.refund.diff;
+  const bars = [
+    ['Прирост маржи от выручки', marginGain, '#059669'],
+    ['Субсидия доставки',        subLoss,    '#dc2626'],
+    ['Возвраты',                 retLoss,    '#dc2626'],
+    ['Итог: чистая маржа',       net.diff,   net.diff>=0?'#059669':'#b45309'],
+  ];
+  const W=1080, rowH=54, L=250, Rr=120, T=10;
+  const H=T+bars.length*rowH+10;
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H});
+  const maxAbs=Math.max(...bars.map(b=>Math.abs(b[1])),0.5);
+  const mid=L+(W-L-Rr)/2;
+  const zeroX = mid;
+  const scale=(W-L-Rr)/2/maxAbs*0.92;
+  svg.append(el('line',{x1:zeroX,x2:zeroX,y1:T,y2:H-8,stroke:'#cbd5e1','stroke-width':1}));
+  bars.forEach((b,i)=>{
+    const [label,val,color]=b;
+    const y=T+i*rowH+10;
+    svg.append(tx(L-14,y+16,label,'ax','end'));
+    const w=Math.abs(val)*scale;
+    const x=val>=0?zeroX:zeroX-w;
+    svg.append(el('rect',{x:x,y:y,width:Math.max(w,1),height:24,fill:color,rx:3,opacity:.9}));
+    svg.append(tx((val>=0?zeroX+w:zeroX-w)+(val>=0?10:-10), y+17, sgn(val,2)+' ₽','ax', val>=0?'start':'end'));
+  });
+  $('#chWater').append(svg);
+})();
+
+$('#mechanism-note').innerHTML =
+  'Маржинальность товара — ' + pct(A.gross_margin,0) + '. Рост выручки на сессию на <b>' + sgn(arpu.diff,2) + ' ₽</b> ' +
+  'даёт <b>' + sgn(A.gross_margin*arpu.diff,2) + ' ₽</b> маржи. Но бесплатная доставка от 2&nbsp;000&nbsp;₽ стоит ' +
+  '<b>' + sgn(sub.diff,2) + ' ₽</b> на сессию — почти ровно столько же. Складывается в ' +
+  '<b>' + sgn(net.diff,2) + ' ₽</b> с интервалом [' + sgn(net.ci_low,2) + '; ' + sgn(net.ci_high,2) + ']. ' +
+  'Вывод, который обычно не делают: <b>метрика «конверсия» здесь не прокси для денег</b>, и тест, остановленный ' +
+  'на первой значимой метрике, дал бы неправильное решение «катим».';
+
+/* ---------- 4. сегменты ---------- */
+const segs = R.segments;
+$('#seg-lead').innerHTML =
+  'Эффект однородный по разрезам: везде направление одно, разброс в пределах ' +
+  Math.min(...segs.map(s=>s.rel*100)).toFixed(1).replace('.',',') + '–' +
+  Math.max(...segs.map(s=>s.rel*100)).toFixed(1).replace('.',',') + '% относительно. ' +
+  'Это хорошая новость для механики и плохая для поиска «где бы это окупилось»: прибыльного сегмента, ' +
+  'на который можно сузить раскатку, в данных нет.';
+
+(function(){
+  const W=1080, rowH=34, L=250, Rr=90, T=16;
+  const H=T+segs.length*rowH+26;
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H});
+  const rels=segs.map(s=>({r:s.rel, lo:s.ci_low/s.control, hi:s.ci_high/s.control, p:s.p}));
+  const lo=Math.min(...rels.map(r=>r.lo),0), hi=Math.max(...rels.map(r=>r.hi),0.05);
+  const X=v=>L+(W-L-Rr)*((v-lo)/(hi-lo));
+  [0].forEach(v=>{
+    svg.append(el('line',{x1:X(v),x2:X(v),y1:T-6,y2:H-22,stroke:'#94a3b8','stroke-width':1.2,'stroke-dasharray':'4 3'}));
+    svg.append(tx(X(v),H-6,'0%','ax','middle'));
+  });
+  [0.05,0.10,0.15].filter(v=>v<=hi).forEach(v=>{
+    svg.append(el('line',{x1:X(v),x2:X(v),y1:T-6,y2:H-22,class:'gl'}));
+    svg.append(tx(X(v),H-6,(v*100).toFixed(0)+'%','ax','middle'));
+  });
+  segs.forEach((s,i)=>{
+    const r=rels[i], y=T+i*rowH+12;
+    const sig = s.p_adj < 0.05;
+    const color = sig ? '#4f46e5' : '#94a3b8';
+    svg.append(tx(L-14,y+4,s.segment+' · '+s.value,'ax','end'));
+    svg.append(el('line',{x1:X(r.lo),x2:X(r.hi),y1:y,y2:y,stroke:color,'stroke-width':2,'opacity':sig?0.85:0.5}));
+    svg.append(el('circle',{cx:X(r.r),cy:y,r:4.5,fill:color}));
+    svg.append(tx(X(r.hi)+10,y+4,(s.rel*100).toFixed(1).replace('.',',')+'%','ax','start'));
+  });
+  $('#chForest').append(svg);
+})();
+
+$('#seg-body').innerHTML = segs.map(s =>
+  '<tr><td>' + s.segment + '</td><td>' + s.value + '</td>' +
+  '<td class="num">' + pct(s.control) + '</td><td class="num">' + pct(s.treat) + '</td>' +
+  '<td class="num">' + sgn(s.rel*100,1) + '%</td>' +
+  '<td class="num">' + pv(s.p) + '</td>' +
+  '<td class="num">' + pv(s.p_adj) + ' <span class="sig ' + (s.p_adj<0.05?'yes':'no') + '">' +
+  (s.p_adj<0.05?'ок':'н/з') + '</span></td></tr>').join('');
+
+const sigRaw = segs.filter(s=>s.p<0.05).length;
+const sigAdj = segs.filter(s=>s.p_adj<0.05).length;
+$('#seg-note').innerHTML =
+  'Проверено <b>' + segs.length + '</b> сегментов. Без поправки значимы ' + sigRaw + ', с поправкой на множественные ' +
+  'сравнения (Бонферрони, ×' + R.m_tests + ') — ' + sigAdj + '. «Новые» и «Санкт-Петербург» перестают быть значимыми ' +
+  'после поправки: точечные оценки там нормальные, но объёма не хватает. Это не повод дорисовывать выводы — ' +
+  'это повод считать такие срезы <b>исследовательскими</b>, а не основой для раскатки.';
+
+/* ---------- 5. ограничения ---------- */
+const LIMITS = [
+  '<b>14 дней — короткий горизонт.</b> Возвраты и отмены дозревают 2–4 недели, поэтому guardrail по возвратам сейчас незначим скорее из-за незрелости данных, чем из-за отсутствия эффекта.',
+  '<b>Эффект новизны не отделён.</b> Часть прироста может быть реакцией на само изменение, а не на экономику доставки. Через месяц он часто откатывается на треть.',
+  '<b>Товарная маржа взята константой ' + pct(A.gross_margin,0) + '.</b> В реальности дешёвые корзины часто менее маржинальны, и тогда разложение по прибыли будет ещё хуже, чем здесь.',
+  '<b>Один порог, один рынок.</b> Тест ничего не говорит про регионы с другой стоимостью последней мили — там 250 ₽ может быть сильно заниженной оценкой.',
+];
+$('#limits').innerHTML = LIMITS.map(s=>'<li>'+s+'</li>').join('');
+
+const BETTER = [
+  '<b>Регистрировать решение по прибыли заранее.</b> Если бы «катим, если чистая маржа на сессию не хуже нуля» было записано до старта, спор о том, чья метрика главная, не возник бы после.',
+  '<b>Смотреть на прибыль на клиента, а не на сессию</b>, и отдельно — на LTV новых клиентов: привлечённые дешёвой доставкой могут вернуться, и тогда экономика сходится на горизонте 3–6 месяцев.',
+  '<b>Заложить стоимость доставки в дизайн как метрику-ограничитель</b> с явным порогом (например, «не больше +15% к субсидии»). Здесь она выросла на ' + sgn(sub.rel*100,0) + '% — это красный флаг, который был виден в тот же день.',
+  '<b>Не подглядывать.</b> Промежуточные срезы на 5-й день показывали более радужную картину; решение принималось по полному периоду.',
+];
+$('#better').innerHTML = BETTER.map(s=>'<li>'+s+'</li>').join('');
+
+/* ---------- 6. шаги ---------- */
+const STEPS = [
+  ['Не раскатывать как есть', 'Прибыль на сессию не выросла, субсидия выросла на ' + sgn(sub.rel*100,0) + '%. Раскатка в таком виде — обмен маржи на красивую метрику.', '#dc2626'],
+  ['Сузить до сегмента', 'Порог 2 000 ₽ только для повторных клиентов и/или регионов: там эффект на конверсию есть, а средний чек страдает меньше.', '#4f46e5'],
+  ['Сменить механику', 'Скидка 150 ₽ на доставку вместо бесплатной: сохраняет поведенческий триггер, но стоит на треть дешевле.', '#059669'],
+];
+$('#steps').innerHTML = STEPS.map(([t,d,c]) =>
+  '<div class="card" style="border-top:3px solid '+c+'"><h3 style="margin-top:6px;font-size:15.5px">'+t+'</h3>' +
+  '<p style="margin-bottom:0;font-size:14px;color:var(--ink2)">'+d+'</p></div>').join('');
+
+$('#final-note').innerHTML =
+  'Следующий эксперимент: <b>скидка 150 ₽ на доставку вместо бесплатной от 2&nbsp;000&nbsp;₽</b>. ' +
+  'Ожидание по расчёту: тот же поведенческий триггер, но субсидия на сессию ' +
+  '≈ ' + sgn(sub.diff*0.4,2) + ' ₽ вместо ' + sgn(sub.diff,2) + ' ₽ — этого хватает, чтобы чистая маржа стала положительной. ' +
+  'Расчётная мощность для этого теста — те же ' + num(nreq) + ' сессий на плечо, срок 14 дней.';
+</script>
+</body>
+</html>
