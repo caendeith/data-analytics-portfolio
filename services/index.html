@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Аналитика для селлеров WB и Ozon — Дамир Зиатдинов</title>
+<meta name="description" content="Юнит-экономика по SKU, разбор потерь маржи, дашборды и автоматизация отчётности для продавцов Wildberries и Ozon. 2 года в e-commerce, включая топ-100 продавца на WB.">
+<link rel="canonical" href="https://caendeith.ru/services/">
+<meta property="og:title" content="Аналитика для селлеров WB и Ozon">
+<meta property="og:description" content="Нахожу, где теряется маржа, и собираю дашборд, по которому видно решения. Отчёт за 3 дня.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://caendeith.ru/services/">
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#101830; --card:#131c36; --line:#243050;
+    --txt:#e8ecf8; --muted:#93a0c0; --accent:#7fd4a3; --accent2:#2f6b4f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 20px}
+  header.hero{padding:64px 0 40px; background:
+     radial-gradient(900px 380px at 15% -10%, rgba(127,212,163,.16), transparent 60%),
+     radial-gradient(700px 300px at 90% 0%, rgba(80,120,255,.14), transparent 60%),
+     var(--bg);}
+  .badge{display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--line);
+    border-radius:999px; color:var(--muted); font-size:13px; margin-bottom:22px; background:rgba(19,28,54,.6)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent); box-shadow:0 0 10px var(--accent)}
+  h1{font-size:clamp(28px,4.6vw,46px); line-height:1.15; margin:0 0 18px; letter-spacing:-.02em}
+  h1 span{color:var(--accent)}
+  .lead{font-size:clamp(16px,2vw,19px); color:#c3cde6; max-width:720px; margin:0 0 28px}
+  .cta{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:34px}
+  .btn{display:inline-block; padding:13px 22px; border-radius:12px; font-weight:600; border:1px solid transparent; transition:.15s}
+  .btn-primary{background:var(--accent); color:#06210f}
+  .btn-primary:hover{filter:brightness(1.08); text-decoration:none}
+  .btn-ghost{border-color:var(--line); color:var(--txt); background:rgba(19,28,54,.5)}
+  .btn-ghost:hover{border-color:var(--accent); text-decoration:none}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-top:8px}
+  .stat{background:rgba(19,28,54,.55); border:1px solid var(--line); border-radius:14px; padding:16px 18px}
+  .stat b{display:block; font-size:22px; letter-spacing:-.01em}
+  .stat span{color:var(--muted); font-size:13.5px}
+  section{padding:56px 0; border-top:1px solid rgba(36,48,80,.6)}
+  h2{font-size:clamp(22px,3vw,30px); margin:0 0 10px; letter-spacing:-.015em}
+  .sub{color:var(--muted); max-width:680px; margin:0 0 30px}
+  .pains{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px}
+  .pain{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px}
+  .pain h3{margin:0 0 6px; font-size:15.5px}
+  .pain p{margin:0; color:var(--muted); font-size:14.5px}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 20px; display:flex; flex-direction:column}
+  .card.hot{border-color:rgba(127,212,163,.45); box-shadow:0 0 0 1px rgba(127,212,163,.12) inset}
+  .card .tag{font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); margin-bottom:10px}
+  .card h3{margin:0 0 8px; font-size:18px}
+  .price{font-size:26px; font-weight:700; letter-spacing:-.02em; margin:4px 0 2px}
+  .price small{font-size:13px; font-weight:400; color:var(--muted)}
+  .card ul{margin:12px 0 0; padding-left:18px; color:var(--muted); font-size:14.5px}
+  .card li{margin-bottom:6px}
+  .card .term{margin-top:auto; padding-top:14px; font-size:13.5px; color:var(--muted)}
+  .steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; counter-reset:s}
+  .step{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px}
+  .step::before{counter-increment:s; content:counter(s); display:inline-grid; place-items:center; width:28px; height:28px;
+    border-radius:8px; background:var(--accent2); color:#dff7e9; font-weight:700; margin-bottom:10px; font-size:14px}
+  .step h3{margin:0 0 6px; font-size:16px}
+  .step p{margin:0; color:var(--muted); font-size:14.5px}
+  .proof{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .proof a{display:block; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; color:var(--txt)}
+  .proof a:hover{border-color:var(--accent); text-decoration:none}
+  .proof b{display:block; margin-bottom:4px}
+  .proof span{color:var(--muted); font-size:14px}
+  .honest{border-left:3px solid var(--accent2); padding:4px 0 4px 18px; color:var(--muted); max-width:760px}
+  .honest li{margin-bottom:8px}
+  details{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:10px}
+  summary{cursor:pointer; font-weight:600}
+  details p{color:var(--muted); margin:10px 0 0}
+  footer{padding:56px 0 40px; border-top:1px solid rgba(36,48,80,.6)}
+  .contact{display:flex; flex-wrap:wrap; gap:12px; margin-top:18px}
+  .foot-links{margin-top:26px; color:var(--muted); font-size:14px; display:flex; flex-wrap:wrap; gap:18px}
+  @media (max-width:640px){ header.hero{padding:44px 0 30px} section{padding:44px 0} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span> Беру 2 проекта в неделю, удалённо</div>
+    <h1>Аналитика для селлеров<br><span>Wildberries и Ozon</span></h1>
+    <p class="lead">
+      Считаю юнит-экономику по каждому SKU, нахожу, где теряется маржа, и собираю отчёт или дашборд,
+      по которому видно, что менять. Два года в e-commerce, включая аналитику у продавца из топ-100 на Wildberries.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://t.me/caendeith">Написать в Telegram</a>
+      <a class="btn btn-ghost" href="#services">Что я делаю</a>
+      <a class="btn btn-ghost" href="https://caendeith.ru/">Примеры работ</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>2 года</b><span>в аналитике e-commerce и фармдистрибуции</span></div>
+      <div class="stat"><b>2 ч → 5 мин</b><span>ежедневный отчёт вместо ручной выгрузки</span></div>
+      <div class="stat"><b>−30% MAPE</b><span>модель прогноза на 24 месяцах, внедрена в закупки</span></div>
+      <div class="stat"><b>96 SKU</b><span>в демо-дашборде: воронка, ABC, когорты</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="pains">
+  <div class="wrap">
+    <h2>С чем обычно приходят</h2>
+    <p class="sub">Одно и то же у большинства селлеров: данных много, а решения принимаются на глаз.</p>
+    <div class="pains">
+      <div class="pain">
+        <h3>«Не понимаю, какой товар реально зарабатывает»</h3>
+        <p>Выручка есть, а после комиссии, логистики, хранения, рекламы и налога — минус. Считаю чистыми по каждому SKU.</p>
+      </div>
+      <div class="pain">
+        <h3>«Отчёты собираются руками полдня»</h3>
+        <p>Свожу выгрузки из ЛК в одну таблицу или дашборд, дальше обновление занимает минуты, а не часы.</p>
+      </div>
+      <div class="pain">
+        <h3>«Не видно, где утекает маржа»</h3>
+        <p>Смотрю возвраты, выкуп, долю рекламы в выручке, оборачиваемость и цены — с конкретными цифрами по каждому пункту.</p>
+      </div>
+      <div class="pain">
+        <h3>«Нужен человек на 10 часов в месяц»</h3>
+        <p>Работаю субподрядом с агентствами и командами: их клиенты получают аналитику, вы — исполнителя без найма.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="wrap">
+    <h2>Услуги и цены</h2>
+    <p class="sub">Фиксированная цена и срок. Начинать проще с разбора — по нему видно, есть ли смысл идти дальше.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="tag">Шаг 1 · вход</div>
+        <h3>Разбор магазина</h3>
+        <div class="price">5 000 ₽ <small>за проект</small></div>
+        <ul>
+          <li>Где теряется маржа: 5 конкретных пунктов</li>
+          <li>Какие SKU тянут вниз, а какие держат</li>
+          <li>Что сделать на этой неделе, а не «в целом»</li>
+          <li>Отчёт в таблице + голосом в чате</li>
+        </ul>
+        <div class="term">Срок 3 дня · нужны выгрузки из ЛК</div>
+      </div>
+      <div class="card hot">
+        <div class="tag">Шаг 2 · основное</div>
+        <h3>Дашборд по магазину</h3>
+        <div class="price">15 000 ₽ <small>за проект</small></div>
+        <ul>
+          <li>Выручка, заказы, выкуп, средний чек</li>
+          <li>ABC/Парето по SKU и когорты</li>
+          <li>Юнит-экономика: комиссия, логистика, хранение, реклама, налог</li>
+          <li>Собирается сам из выгрузок, без ручной сборки</li>
+        </ul>
+        <div class="term">Срок 5–7 дней · обновление по расписанию</div>
+      </div>
+      <div class="card">
+        <div class="tag">Шаг 3 · подписка</div>
+        <h3>Сопровождение</h3>
+        <div class="price">20 000 ₽ <small>/ месяц</small></div>
+        <ul>
+          <li>Обновление данных раз в неделю</li>
+          <li>Разбор изменений: что выросло, что просело</li>
+          <li>Ответы на вопросы в чате</li>
+          <li>Правки дашборда по мере роста</li>
+        </ul>
+        <div class="term">Можно отменить в любой месяц</div>
+      </div>
+      <div class="card">
+        <div class="tag">Агентствам</div>
+        <h3>Субподряд</h3>
+        <div class="price">25 000 ₽ <small>/ месяц</small></div>
+        <ul>
+          <li>10 часов аналитики под ваших клиентов</li>
+          <li>Без вашего бренда в отчётах</li>
+          <li>Сроки и формат — как скажете</li>
+          <li>Работаю по договору, чек предоставляю</li>
+        </ul>
+        <div class="term">Самозанятый / ИП · есть чек</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>Как это работает</h2>
+    <p class="sub">Всё удалённо и письменно — созвоны только если вам удобно.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Присылаете выгрузки</h3>
+        <p>Отчёты из личного кабинета: реализация, остатки, реклама, финансы. Доступ к кабинету не нужен.</p>
+      </div>
+      <div class="step">
+        <h3>Я считаю и показываю</h3>
+        <p>Свожу данные, считаю экономику по SKU, показываю, где расходятся выручка и прибыль.</p>
+      </div>
+      <div class="step">
+        <h3>Отчёт или дашборд</h3>
+        <p>Таблица, PDF или интерактивный дашборд — как удобнее вам и вашей команде.</p>
+      </div>
+      <div class="step">
+        <h3>Вы решаете</h3>
+        <p>5 пунктов, что делать дальше. Дальше — по желанию: сопровождение или разовая задача.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="proof">
+  <div class="wrap">
+    <h2>Что уже сделано</h2>
+    <p class="sub">Открытый код, тесты и живые демо — можно посмотреть до оплаты.</p>
+    <div class="proof">
+      <a href="https://caendeith.ru/01-dashboard/dashboard.html">
+        <b>Дашборд продавца маркетплейса</b>
+        <span>180 дней, 96 SKU: KPI, воронка, ABC-Парето, когорты, карта «часы × дни»</span>
+      </a>
+      <a href="https://caendeith.ru/02-ab-test/report.html">
+        <b>Разбор A/B-теста</b>
+        <span>300 000 сессий: рост конверсии +8,1% не дал роста прибыли — почему</span>
+      </a>
+      <a href="https://caendeith.ru/03-airflow-dag/README.md">
+        <b>ETL-пайплайн на Airflow</b>
+        <span>Идемпотентная загрузка, гейты качества, 43 теста</span>
+      </a>
+      <a href="https://caendeith.ru/">
+        <b>Все проекты</b>
+        <span>6 работ, 123 автотеста, живые демо</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="honest">
+  <div class="wrap">
+    <h2>Честно о границах</h2>
+    <ul class="honest">
+      <li>Не обещаю рост продаж. Обещаю показать, где теряется маржа, и дать цифры для решения.</li>
+      <li>Не работаю с чужими данными без разрешения владельца магазина — по договору и NDA при необходимости.</li>
+      <li>Не беру проекты, где нужен доступ в личный кабинет: достаточно выгрузок.</li>
+      <li>Если по вашим данным видно, что аналитика не нужна — скажу это до оплаты.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>Частые вопросы</h2>
+    <div style="max-width:760px; margin-top:26px">
+      <details>
+        <summary>Нужно ли давать доступ к личному кабинету?</summary>
+        <p>Нет. Достаточно выгрузок: отчёт о реализации, остатки, статистика рекламы, финансовые отчёты. Если удобнее API — обсудим отдельно.</p>
+      </details>
+      <details>
+        <summary>Работаете с Ozon или только Wildberries?</summary>
+        <p>С обоими. Основной опыт — Wildberries (топ-100 продавец), но структура данных на Ozon та же: реализация, комиссии, логистика, реклама.</p>
+      </details>
+      <details>
+        <summary>Сколько ждать первый результат?</summary>
+        <p>Разбор — 3 дня. Дашборд — 5–7 дней. Срок фиксирую в переписке до начала работы.</p>
+      </details>
+      <details>
+        <summary>Как проходит оплата?</summary>
+        <p>50% предоплата, 50% после сдачи. Работаю как самозанятый, чек предоставляю. Для агентств — по договору.</p>
+      </details>
+      <details>
+        <summary>А если данных мало?</summary>
+        <p>Начнём с разбора: его хватит, чтобы понять, есть ли что анализировать. Если данных не хватает — скажу об этом сразу и денег не возьму.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h2 style="margin-bottom:6px">Напишите, что происходит с магазином</h2>
+    <p class="sub" style="margin-bottom:0">Отвечу в тот же день, скажу честно, смогу ли помочь и сколько это стоит.</p>
+    <div class="contact">
+      <a class="btn btn-primary" href="https://t.me/caendeith">Telegram @caendeith</a>
+      <a class="btn btn-ghost" href="mailto:caendeith@internet.ru">caendeith@internet.ru</a>
+    </div>
+    <div class="foot-links">
+      <span>Дамир Зиатдинов · Ижевск, работаю удалённо</span>
+      <a href="https://caendeith.ru/">Портфолио</a>
+      <a href="https://github.com/caendeith">GitHub</a>
+      <a href="https://vk.ru/caendeith">VK</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
