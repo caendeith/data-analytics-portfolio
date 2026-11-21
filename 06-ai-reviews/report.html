@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Разбор отзывов на маркетплейсах — классификация жалоб</title>
+<style>
+  :root{
+    --bg:#0a0f1c; --bg2:#0d1424; --panel:#111a2e; --panel2:#16203a; --line:#22304f;
+    --ink:#e6edf7; --muted:#8b9bb8; --dim:#5c6b88;
+    --accent:#4cc2ff; --accent2:#8b7cff; --good:#34d399; --bad:#f87171; --warn:#fbbf24;
+    --cyan:#22d3ee; --violet:#a78bfa; --pink:#f472b6; --lime:#a3e635;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 20% -10%, #16233d 0%, var(--bg) 55%) fixed;
+    color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:0 22px 64px}
+
+  header.top{
+    position:sticky;top:0;z-index:40;background:rgba(10,15,28,.86);
+    backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+  }
+  .top-in{max-width:1320px;margin:0 auto;padding:15px 22px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:40px;height:40px;border-radius:11px;flex:0 0 auto;
+    background:linear-gradient(135deg,#4cc2ff,#8b7cff);
+    display:grid;place-items:center;color:#06101f;font-weight:900;font-size:13px;letter-spacing:-.5px;
+    box-shadow:0 6px 22px rgba(76,194,255,.28);
+  }
+  h1{font-size:17px;margin:0;font-weight:750;letter-spacing:-.2px}
+  .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .tags{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{
+    font-size:11px;font-weight:700;letter-spacing:.3px;padding:5px 10px;border-radius:999px;
+    background:rgba(76,194,255,.1);color:var(--accent);border:1px solid rgba(76,194,255,.28);
+  }
+  .tag.warn{background:rgba(251,191,36,.1);color:var(--warn);border-color:rgba(251,191,36,.3)}
+  .tag.dim{background:rgba(139,155,184,.08);color:var(--muted);border-color:var(--line)}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin:24px 0 18px}
+  .kpi{
+    background:linear-gradient(180deg,var(--panel) 0%,rgba(17,26,46,.55) 100%);
+    border:1px solid var(--line);border-radius:15px;padding:14px 16px;min-width:0;
+  }
+  .kpi .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:800}
+  .kpi .val{font-size:26px;font-weight:800;letter-spacing:-.9px;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+  .grid{display:grid;gap:16px;margin-bottom:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g23{grid-template-columns:1.6fr 1fr}
+  .g13{grid-template-columns:1.25fr 1fr 1fr}
+
+  .card{
+    background:linear-gradient(180deg,rgba(22,32,58,.72),rgba(17,26,46,.72));
+    border:1px solid var(--line);border-radius:16px;padding:16px 18px 14px;
+    box-shadow:0 18px 40px -24px rgba(0,0,0,.9);min-width:0;
+  }
+  .card h2{font-size:13px;margin:0 0 3px;font-weight:750;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card .hint{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+  .card h2 .pill{
+    font-size:10.5px;font-weight:800;color:var(--dim);background:rgba(139,155,184,.1);
+    padding:3px 8px;border-radius:999px;letter-spacing:.3px;
+  }
+  .chart{width:100%;position:relative}
+  .chart svg{display:block;width:100%;height:auto;overflow:visible}
+  .chart text{font-family:inherit}
+
+  #tip{
+    position:fixed;pointer-events:none;z-index:100;opacity:0;transition:opacity .1s;
+    background:#050a15;color:#e6edf7;font-size:12px;line-height:1.5;padding:9px 12px;border-radius:9px;
+    border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.6);white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+
+  table.mx{border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums;width:100%}
+  table.mx th,table.mx td{padding:5px 7px;text-align:center;border-radius:5px}
+  table.mx th{color:var(--muted);font-weight:700;font-size:10.5px}
+  table.mx td.r{text-align:left;color:var(--muted);white-space:nowrap}
+
+  .ex{display:flex;flex-direction:column;gap:10px}
+  .exrow{
+    border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:rgba(10,15,28,.45);
+  }
+  .exrow.ok{border-color:rgba(52,211,153,.35)}
+  .exrow.fail{border-color:rgba(248,113,113,.4)}
+  .extext{font-size:13px;line-height:1.5;color:var(--ink)}
+  .exmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;font-size:11px;color:var(--dim)}
+  .badge{
+    font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.2px;
+    border:1px solid var(--line);background:rgba(139,155,184,.08);color:var(--muted);white-space:nowrap;
+  }
+  .badge.good{color:var(--good);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1)}
+  .badge.bad{color:var(--bad);border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1)}
+  .badge.pred{color:var(--accent);border-color:rgba(76,194,255,.4);background:rgba(76,194,255,.1)}
+  .badge.gold{color:var(--violet);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.1)}
+  .why{font-size:11px;color:var(--dim);margin-top:6px}
+  .why code{background:rgba(76,194,255,.08);color:#9fd8ff;padding:1px 5px;border-radius:4px;font-size:10.5px}
+
+  .note{
+    border-left:3px solid var(--warn);background:rgba(251,191,36,.06);
+    padding:12px 15px;border-radius:10px;font-size:12.5px;color:#d9e2f2;
+  }
+  .note b{color:var(--warn)}
+  .note.ok{border-left-color:var(--good);background:rgba(52,211,153,.06)}
+  .note.ok b{color:var(--good)}
+
+  footer{margin-top:26px;font-size:12px;color:var(--dim);line-height:1.7}
+  footer code{background:rgba(139,155,184,.1);padding:1px 6px;border-radius:4px;font-size:11.5px;color:var(--muted)}
+
+  @media (max-width:1100px){
+    .kpis{grid-template-columns:repeat(3,1fr)}
+    .g23,.g2,.g13{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .card{padding:14px 14px 12px}
+    h1{font-size:15px}
+  }
+  @media print{
+    body{background:#fff;color:#111}
+    header.top{position:static;background:#fff}
+    .card,.kpi{background:#fff;border-color:#ddd;box-shadow:none}
+    .controls{display:none}
+    .card{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="logo">AI</div>
+      <div>
+        <h1>Разбор отзывов на маркетплейсах</h1>
+        <div class="sub" id="periodLabel">—</div>
+      </div>
+    </div>
+    <div class="tags" id="headTags"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid g23">
+    <div class="card">
+      <h2>Распределение жалоб <span class="pill" id="distPill">—</span></h2>
+      <div class="hint">Истинная разметка (gold) против предсказания правил, доля от всех отзывов</div>
+      <div class="chart" id="chDist"></div>
+      <div class="legend">
+        <span><i style="background:#8b7cff"></i>gold — истина</span>
+        <span><i style="background:#4cc2ff"></i>pred — правила</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Качество по классам</h2>
+      <div class="hint">Precision, recall и F1 правил на gold-наборе</div>
+      <div class="chart" id="chPrf"></div>
+      <div class="legend">
+        <span><i style="background:#22d3ee"></i>precision</span>
+        <span><i style="background:#a3e635"></i>recall</span>
+        <span><i style="background:#f472b6"></i>F1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>Матрица ошибок <span class="pill">истина → предсказание</span></h2>
+      <div class="hint">Чем темнее клетка, тем больше отзывов. Неверные — красным контуром</div>
+      <div class="chart" id="chMx"></div>
+    </div>
+    <div class="card">
+      <h2>Топ-жалоб по категориям товара</h2>
+      <div class="hint">Доля отзывов с жалобой внутри категории товара (gold-разметка)</div>
+      <div class="chart" id="chCat"></div>
+      <div class="legend" id="catLegend"></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>Сравнение бэкендов</h2>
+      <div class="hint" id="cmpHint">Правила против LLM: macro-F1 и accuracy</div>
+      <div id="cmp"></div>
+    </div>
+    <div class="card">
+      <h2>Примеры предсказаний</h2>
+      <div class="hint">По каждому классу — уверенное попадание и типичная ошибка правил</div>
+      <div class="ex" id="examples"></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>Отрицания в живых текстах</h2>
+      <div class="hint">Фразы, где «не» меняет смысл: «не брак» — это хорошо, «не пришёл» — плохо</div>
+      <div class="ex" id="negations"></div>
+    </div>
+    <div class="card">
+      <h2>Где правила путаются</h2>
+      <div class="hint">Самые частые пары «истина → предсказание»</div>
+      <div id="confusions"></div>
+      <div class="note" style="margin-top:14px" id="statusNote"></div>
+    </div>
+  </div>
+
+  <footer>
+    <b>О данных.</b> Отзывы синтетические: тексты собраны из шаблонов с опечатками,
+    эмодзи и отрицаниями, «истина» размечена на этапе генерации. Это стенд для
+    проверки классификатора, а не выгрузка реальных отзывов Wildberries или Ozon.<br>
+    <b>Стек:</b> Python (генерация, правила, метрики), vanilla JS + SVG (визуализация),
+    один самодостаточный HTML-файл без CDN и без сети.
+    Сгенерировано <code id="genAt">—</code>, seed <code id="seedVal">—</code>.
+  </footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+/* ============================== DATA ============================== */
+const DATA = {"meta": {"generated_at": "2026-11-21 09:53 UTC", "seed": 20261121, "n_reviews": 1600, "n_errors": 199, "backend": "правила (regex + окно отрицания)"}, "kpi": {"accuracy": 87.6, "macro_f1": 89.8, "errors": 199, "total": 1600, "worst_label": "нет_жалобы", "worst_f1": 78.8, "worst_support": 384}, "labels": ["размер", "брак_качество", "доставка", "цена", "упаковка", "описание_не_соответствует", "продавец_поддержка", "нет_жалобы"], "confusion": [[176, 0, 0, 0, 0, 2, 0, 30], [0, 243, 0, 0, 0, 0, 0, 29], [0, 0, 201, 0, 0, 34, 0, 5], [0, 0, 0, 128, 0, 0, 0, 0], [0, 3, 0, 0, 107, 0, 0, 2], [0, 0, 0, 0, 0, 156, 0, 4], [0, 0, 0, 0, 0, 1, 95, 0], [0, 0, 49, 40, 0, 0, 0, 295]], "classes": [{"label": "размер", "precision": 100.0, "recall": 84.6, "f1": 91.7, "support": 208, "errors": 32}, {"label": "брак_качество", "precision": 98.8, "recall": 89.3, "f1": 93.8, "support": 272, "errors": 29}, {"label": "доставка", "precision": 80.4, "recall": 83.8, "f1": 82.0, "support": 240, "errors": 39}, {"label": "цена", "precision": 76.2, "recall": 100.0, "f1": 86.5, "support": 128, "errors": 0}, {"label": "упаковка", "precision": 100.0, "recall": 95.5, "f1": 97.7, "support": 112, "errors": 5}, {"label": "описание_не_соответствует", "precision": 80.8, "recall": 97.5, "f1": 88.4, "support": 160, "errors": 4}, {"label": "продавец_поддержка", "precision": 100.0, "recall": 99.0, "f1": 99.5, "support": 96, "errors": 1}, {"label": "нет_жалобы", "precision": 80.8, "recall": 76.8, "f1": 78.8, "support": 384, "errors": 89}], "distribution": {"размер": 208, "брак_качество": 272, "доставка": 240, "цена": 128, "упаковка": 112, "описание_не_соответствует": 160, "продавец_поддержка": 96, "нет_жалобы": 384}, "confusions": [{"gold": "нет_жалобы", "pred": "доставка", "count": 49}, {"gold": "нет_жалобы", "pred": "цена", "count": 40}, {"gold": "доставка", "pred": "описание_не_соответствует", "count": 34}, {"gold": "размер", "pred": "нет_жалобы", "count": 30}, {"gold": "брак_качество", "pred": "нет_жалобы", "count": 29}, {"gold": "доставка", "pred": "нет_жалобы", "count": 5}, {"gold": "описание_не_соответствует", "pred": "нет_жалобы", "count": 4}, {"gold": "упаковка", "pred": "брак_качество", "count": 3}, {"gold": "упаковка", "pred": "нет_жалобы", "count": 2}, {"gold": "размер", "pred": "описание_не_соответствует", "count": 2}], "failure_samples": [{"gold": "нет_жалобы", "pred": "доставка", "text": "Доставили раньше срока, коробка не помята. Спасибо продавцу!", "matched": "доставили; спасибо; раньше срока", "rating": 3}, {"gold": "нет_жалобы", "pred": "доставка", "text": "Доставили раньше срока, коробка не помята. Спасибо продавцу! 😡", "matched": "доставили; спасибо; раньше срока", "rating": 5}, {"gold": "нет_жалобы", "pred": "цена", "text": "Цена порадовала, качество на уровне. Закажу ещё.", "matched": "цена; качество на уровне", "rating": 5}, {"gold": "нет_жалобы", "pred": "цена", "text": "Цена порадовала, качество на уровне. 😤 Закажу ещё.", "matched": "цена; качество на уровне", "rating": 4}, {"gold": "доставка", "pred": "описание_не_соответствует", "text": "Везли 5 дней, хотя обещали два. Планировала на праздник.", "matched": "обещали", "rating": 1}, {"gold": "доставка", "pred": "описание_не_соответствует", "text": "Везли 12 дней, хотя обещали два. Планировала на праздник.", "matched": "обещали", "rating": 1}, {"gold": "размер", "pred": "нет_жалобы", "text": "Пришло 46 вместо заказанных 48. Переззаказывать не буду.", "matched": "—", "rating": 1}, {"gold": "размер", "pred": "нет_жалобы", "text": "Заказывала 50, пришло меньше на размер. Обидно, ткань хорошая.", "matched": "размер; хорошая", "rating": 1}, {"gold": "брак_качество", "pred": "нет_жалобы", "text": "Не брак, но качество так себе: ткань тонкая, просвечивает.", "matched": "не брак", "rating": 2}, {"gold": "брак_качество", "pred": "нет_жалобы", "text": "Долго выбирала и вот что получилось. Не брак, но качество так себе: ткань тонкая, просвечивает.", "matched": "не брак", "rating": 2}, {"gold": "доставка", "pred": "нет_жалобы", "text": "Заказ не пришёл ввремя, ждала почти две недели. 💔", "matched": "—", "rating": 3}, {"gold": "доставка", "pred": "нет_жалобы", "text": "Везли 9 дней, хотя общеали два. Планировала на праздник.", "matched": "—", "rating": 2}, {"gold": "описание_не_соответствует", "pred": "нет_жалобы", "text": "Описание не соответсттвует: заявленная длина на 15 см больше.", "matched": "—", "rating": 3}, {"gold": "описание_не_соответствует", "pred": "нет_жалобы", "text": "В описании обещли подарок, ничего не пришло. 😡", "matched": "—", "rating": 3}, {"gold": "упаковка", "pred": "брак_качество", "text": "Корробка развалилась, внутри всё в пыли.", "matched": "развалилась; в пыли", "rating": 1}, {"gold": "упаковка", "pred": "брак_качество", "text": "Корбка развалилась, внутри всё в пыли. Фото приложила.", "matched": "развалилась; в пыли", "rating": 3}], "llm": {"ran": false, "reason": "флаг --with-llm не передан"}, "rules_note": {"classes": 8, "complaint_classes": 7, "synonyms_handled": "отрицание в окне 3 слов, эмодзи, опечатки, ё/е"}};
+const LABELS = DATA.dataset.labels;
+const SHORT = {
+  "размер": "размер",
+  "брак_качество": "брак / качество",
+  "доставка": "доставка",
+  "цена": "цена",
+  "упаковка": "упаковка",
+  "описание_не_соответствует": "описание",
+  "продавец_поддержка": "поддержка",
+  "нет_жалобы": "нет жалобы"
+};
+const COLORS = {
+  "размер": "#4cc2ff",
+  "брак_качество": "#f87171",
+  "доставка": "#fbbf24",
+  "цена": "#a3e635",
+  "упаковка": "#22d3ee",
+  "описание_не_соответствует": "#a78bfa",
+  "продавец_поддержка": "#f472b6",
+  "нет_жалобы": "#34d399"
+};
+
+/* ============================== utils ============================== */
+const NS = "http://www.w3.org/2000/svg";
+const nf = new Intl.NumberFormat("ru-RU");
+const isNum = v => typeof v === "number" && Number.isFinite(v);
+const num = v => isNum(v) ? nf.format(Math.round(v)) : "—";
+const pct = (v, d = 1) => isNum(v) ? (v * 100).toFixed(d).replace(".", ",") + "%" : "—";
+const f2 = v => isNum(v) ? v.toFixed(2).replace(".", ",") : "—";
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function s(tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  return e;
+}
+function labelOf(key) { return SHORT[key] || key; }
+function colorOf(key) { return COLORS[key] || "#8b9bb8"; }
+
+const tip = document.getElementById("tip");
+function showTip(evt, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = "1";
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth - 8) x = evt.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight - 8) y = evt.clientY - r.height - pad;
+  tip.style.left = Math.max(8, x) + "px";
+  tip.style.top = Math.max(8, y) + "px";
+}
+function hideTip() { tip.style.opacity = "0"; }
+function bindTip(el, html) {
+  el.addEventListener("mousemove", e => showTip(e, html));
+  el.addEventListener("mouseleave", hideTip);
+}
+
+/* ============================== header / kpi ============================== */
+function renderHeader() {
+  const d = DATA.dataset;
+  document.getElementById("periodLabel").textContent =
+    "Синтетический корпус: " + num(d.n) + " отзывов · " + d.labels.length + " классов · seed " + d.seed;
+  document.getElementById("genAt").textContent = DATA.generatedAt;
+  document.getElementById("seedVal").textContent = String(d.seed);
+
+  const st = DATA.llmStatus || {};
+  const tags = document.getElementById("headTags");
+  tags.innerHTML = "";
+  const mk = (text, cls) => {
+    const el = document.createElement("span");
+    el.className = "tag" + (cls ? " " + cls : "");
+    el.textContent = text;
+    tags.appendChild(el);
+  };
+  mk("rules: accuracy " + pct(DATA.rules.accuracy));
+  mk("macro-F1 " + f2(DATA.rules.macro_f1), "dim");
+  if (st.ran) mk("LLM прогнан", "");
+  else mk("LLM недоступен", "warn");
+}
+
+function renderKpis() {
+  const r = DATA.rules;
+  const d = DATA.dataset;
+  const complaintShare = 1 - (d.gold["нет_жалобы"] || 0) / (d.n || 1);
+  const worst = (r.per_class && Object.values(r.per_class)
+    .filter(c => c.support > 0)
+    .sort((a, b) => a.f1 - b.f1)[0]) || null;
+  const items = [
+    ["Accuracy", pct(r.accuracy), "верных меток из " + num(d.n)],
+    ["Macro-F1", f2(r.macro_f1), "среднее по " + r.labels.length + " классам"],
+    ["Weighted-F1", f2(r.weighted_f1), "с учётом размера классов"],
+    ["Доля жалоб", pct(complaintShare), "остальное — «нет жалобы»"],
+    ["Отзывов", num(d.n), "средняя длина " + num(d.avg_chars) + " симв."],
+    ["Слабый класс", worst ? labelOf(worst.label) : "—", worst ? "F1 " + f2(worst.f1) : "—"]
+  ];
+  const box = document.getElementById("kpis");
+  box.innerHTML = "";
+  for (const [lab, val, hint] of items) {
+    const el = document.createElement("div");
+    el.className = "kpi";
+    el.innerHTML = '<div class="lab">' + esc(lab) + '</div><div class="val">' + esc(val) +
+      '</div><div class="hint">' + esc(hint) + '</div>';
+    box.appendChild(el);
+  }
+}
+
+/* ============================== chart: distribution ============================== */
+function renderDist() {
+  const box = document.getElementById("chDist");
+  box.innerHTML = "";
+  const d = DATA.dataset;
+  const N = d.n || 1;
+  const W = 620, rowH = 26, padL = 118, padR = 46, padT = 6, padB = 4;
+  const H = padT + padB + LABELS.length * rowH;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+  const innerW = W - padL - padR;
+  const maxShare = Math.max(
+    ...LABELS.map(l => Math.max((d.gold[l] || 0) / N, (d.predicted[l] || 0) / N)),
+    0.01
+  );
+
+  LABELS.forEach((lab, i) => {
+    const y0 = padT + i * rowH;
+    const g = (d.gold[lab] || 0) / N;
+    const p = (d.predicted[lab] || 0) / N;
+    const name = s("text", {
+      x: padL - 10, y: y0 + rowH * 0.62, "text-anchor": "end",
+      fill: "#8b9bb8", "font-size": 11.5
+    }, labelOf(lab));
+    svg.appendChild(name);
+
+    const wy = y0 + rowH * 0.24;
+    const bw = Math.max(1.5, (g / maxShare) * innerW);
+    const barGold = s("rect", {
+      x: padL, y: wy, width: bw, height: 5, rx: 2.5, fill: "#8b7cff", opacity: .85
+    });
+    bindTip(barGold, `<b>${esc(lab)}</b><br>gold: ${num(d.gold[lab] || 0)} · ${pct(g)}`);
+    svg.appendChild(barGold);
+
+    const by = wy + 7;
+    const bwP = Math.max(1.5, (p / maxShare) * innerW);
+    const barPred = s("rect", {
+      x: padL, y: by, width: bwP, height: 5, rx: 2.5, fill: "#4cc2ff"
+    });
+    bindTip(barPred, `<b>${esc(lab)}</b><br>pred: ${num(d.predicted[lab] || 0)} · ${pct(p)}`);
+    svg.appendChild(barPred);
+
+    const t = s("text", {
+      x: W - padR + 8, y: y0 + rowH * 0.7, fill: "#5c6b88", "font-size": 10.5
+    }, pct(p));
+    svg.appendChild(t);
+  });
+
+  const axis = s("line", {
+    x1: padL, y1: padT, x2: padL, y2: H - padB, stroke: "#22304f", "stroke-width": 1
+  });
+  svg.appendChild(axis);
+  box.appendChild(svg);
+
+  const pill = document.getElementById("distPill");
+  pill.textContent = "доля, %";
+}
+
+/* ============================== chart: per-class P/R/F1 ============================== */
+function renderPrf() {
+  const box = document.getElementById("chPrf");
+  box.innerHTML = "";
+  const per = DATA.rules.per_class || {};
+  const rows = LABELS.filter(l => per[l] && per[l].support > 0);
+  const W = 620, rowH = 30, padL = 118, padR = 16, padT = 8, padB = 8;
+  const H = padT + padB + rows.length * rowH;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+  const innerW = W - padL - padR;
+
+  // сетка 0..100%
+  [0.25, 0.5, 0.75, 1].forEach(v => {
+    const x = padL + innerW * v;
+    svg.appendChild(s("line", { x1: x, y1: padT, x2: x, y2: H - padB, stroke: "#182444", "stroke-dasharray": "2 4" }));
+  });
+
+  rows.forEach((lab, i) => {
+    const c = per[lab];
+    const y0 = padT + i * rowH;
+    svg.appendChild(s("text", {
+      x: padL - 10, y: y0 + rowH * 0.62, "text-anchor": "end", fill: "#8b9bb8", "font-size": 11.5
+    }, labelOf(lab)));
+
+    const metrics = [["precision", "#22d3ee"], ["recall", "#a3e635"], ["f1", "#f472b6"]];
+    metrics.forEach(([key, col], k) => {
+      const v = isNum(c[key]) ? c[key] : 0;
+      const y = y0 + 5 + k * 7;
+      const bar = s("rect", { x: padL, y, width: Math.max(1, innerW * Math.min(1, v)), height: 5, rx: 2.5, fill: col });
+      bindTip(bar, `<b>${esc(lab)}</b><br>${key}: ${f2(v)}<br>support: ${num(c.support)}`);
+      svg.appendChild(bar);
+    });
+
+    const f1text = s("text", {
+      x: padL + innerW + 35, y: y0 + rowH * 0.62, "text-anchor": "end", fill: "#f472b6", "font-size": 11, "font-weight": 700
+    }, f2(c.f1));
+    svg.appendChild(f1text);
+  });
+
+  svg.appendChild(s("line", { x1: padL, y1: padT, x2: padL, y2: H - padB, stroke: "#22304f" }));
+  box.appendChild(svg);
+}
+
+/* ============================== chart: confusion matrix ============================== */
+function renderMatrix() {
+  const box = document.getElementById("chMx");
+  box.innerHTML = "";
+  const m = DATA.rules.confusion || [];
+  const n = LABELS.length;
+  const cell = 46, padL = 104, padT = 10, W = padL + n * cell + 14, H = padT + n * cell + 16;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+  let maxV = 1;
+  for (const row of m) for (const v of row) maxV = Math.max(maxV, v);
+
+  for (let i = 0; i < n; i++) {
+    svg.appendChild(s("text", {
+      x: padL - 8, y: padT + i * cell + cell * 0.62, "text-anchor": "end", fill: "#8b9bb8", "font-size": 10.5
+    }, labelOf(LABELS[i])));
+  }
+  for (let j = 0; j < n; j++) {
+    const x = padL + j * cell + cell * 0.35;
+    const y = padT + 2;
+    svg.appendChild(s("text", {
+      x, y, fill: "#5c6b88", "font-size": 9.5, "text-anchor": "start",
+      transform: "rotate(-40 " + x + " " + y + ")"
+    }, labelOf(LABELS[j])));
+  }
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const v = (m[i] && isNum(m[i][j])) ? m[i][j] : 0;
+      const t = v / maxV;
+      const diag = i === j;
+      const fill = diag
+        ? `rgba(52,211,153,${0.06 + 0.5 * t})`
+        : (v ? `rgba(248,113,113,${0.06 + 0.5 * t})` : "rgba(139,155,184,.05)");
+      const rect = s("rect", {
+        x: padL + j * cell + 1, y: padT + i * cell + 1,
+        width: cell - 2, height: cell - 2, rx: 7,
+        fill, stroke: diag ? "rgba(52,211,153,.22)" : (v ? "rgba(248,113,113,.28)" : "rgba(34,48,79,.6)")
+      });
+      bindTip(rect, `<b>${esc(LABELS[i])} → ${esc(LABELS[j])}</b><br>${num(v)} отз. · ${pct(v / Math.max(1, rowSum(i)))} от строки`);
+      svg.appendChild(rect);
+      if (v) {
+        svg.appendChild(s("text", {
+          x: padL + j * cell + cell / 2, y: padT + i * cell + cell / 2 + 4,
+          "text-anchor": "middle", fill: t > 0.45 ? "#0a0f1c" : "#cfd9ea",
+          "font-size": 11.5, "font-weight": 700
+        }, String(v)));
+      }
+    }
+  }
+  box.appendChild(svg);
+}
+function rowSum(i) {
+  const m = DATA.rules.confusion || [];
+  return (m[i] || []).reduce((a, b) => a + (isNum(b) ? b : 0), 0);
+}
+
+/* ============================== chart: complaints by product category ============================== */
+function renderCat() {
+  const box = document.getElementById("chCat");
+  box.innerHTML = "";
+  const stats = DATA.byCategory || [];
+  if (!stats.length) {
+    box.innerHTML = '<div class="hint">Нет данных по категориям.</div>';
+    return;
+  }
+  const W = 620, rowH = 30, padL = 122, padR = 12, padT = 6, padB = 6;
+  const H = padT + padB + stats.length * rowH;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+  const innerW = W - padL - padR;
+
+  stats.forEach((row, i) => {
+    const y0 = padT + i * rowH;
+    svg.appendChild(s("text", {
+      x: padL - 10, y: y0 + rowH * 0.63, "text-anchor": "end", fill: "#8b9bb8", "font-size": 11.5
+    }, row.category));
+
+    let x = padL;
+    for (const part of row.parts) {
+      const w = Math.max(1, innerW * Math.min(1, part.share));
+      const rect = s("rect", {
+        x, y: y0 + 7, width: Math.max(1, w - 1), height: 15, rx: 3, fill: colorOf(part.label)
+      });
+      bindTip(rect, `<b>${esc(row.category)}</b><br>${esc(part.label)}: ${num(part.n)} из ${num(row.n)} (${pct(part.share)})`);
+      svg.appendChild(rect);
+      x += w;
+    }
+    svg.appendChild(s("text", {
+      x: W - padR + 2, y: y0 + rowH * 0.63, "text-anchor": "end", fill: "#5c6b88", "font-size": 10.5
+    }, num(row.n)));
+  });
+  box.appendChild(svg);
+
+  const lg = document.getElementById("catLegend");
+  lg.innerHTML = "";
+  const top = DATA.topLabelsByCategory || [];
+  top.slice(0, 5).forEach(lab => {
+    const el = document.createElement("span");
+    el.innerHTML = '<i style="background:' + colorOf(lab) + '"></i>' + esc(labelOf(lab));
+    lg.appendChild(el);
+  });
+}
+
+/* ============================== backend comparison ============================== */
+function renderCompare() {
+  const box = document.getElementById("cmp");
+  box.innerHTML = "";
+  const llm = DATA.llm;
+  const st = DATA.llmStatus || {};
+  if (!llm) {
+    const note = document.createElement("div");
+    note.className = "note";
+    const why = st.reason || "LLM-бэкенд не прогонялся.";
+    note.innerHTML = "<b>LLM-бэкенд не прогонялся.</b> " + esc(why) +
+      "<br><br>В коде есть рабочий клиент OpenAI-совместимого API на <code>urllib</code> " +
+      "(<code>reviewlab/llm.py</code>): запрос, разбор JSON-ответа, обработка ошибок. " +
+      "Без ключа он честно говорит «недоступен» и не выдумывает метрики — сравнение " +
+      "двух подходов появится, как только задан <code>OPENAI_API_KEY</code>.";
+    box.appendChild(note);
+    document.getElementById("cmpHint").textContent = "Правила против LLM: второй бэкенд сейчас недоступен";
+    return;
+  }
+  const r = DATA.rules, l = llm;
+  const W = 620, rowH = 46, padL = 120, padT = 8, padB = 6;
+  const H = padT + padB + 2 * rowH + 20;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+  const innerW = W - padL - 20;
+  const series = [
+    ["accuracy", r.accuracy, l.accuracy],
+    ["macro-F1", r.macro_f1, l.macro_f1]
+  ];
+  series.forEach(([name, a, b], i) => {
+    const y0 = padT + i * rowH;
+    svg.appendChild(s("text", { x: padL - 10, y: y0 + 20, "text-anchor": "end", fill: "#8b9bb8", "font-size": 11.5 }, name));
+    const w1 = Math.max(1, innerW * Math.min(1, isNum(a) ? a : 0));
+    const w2 = Math.max(1, innerW * Math.min(1, isNum(b) ? b : 0));
+    const b1 = s("rect", { x: padL, y: y0 + 4, width: w1, height: 12, rx: 3, fill: "#4cc2ff" });
+    bindTip(b1, `<b>rules · ${esc(name)}</b><br>${f2(a)}`);
+    svg.appendChild(b1);
+    const b2 = s("rect", { x: padL, y: y0 + 20, width: w2, height: 12, rx: 3, fill: "#a78bfa" });
+    bindTip(b2, `<b>llm · ${esc(name)}</b><br>${f2(b)}`);
+    svg.appendChild(b2);
+    svg.appendChild(s("text", { x: padL + Math.max(w1, w2) + 8, y: y0 + 15, fill: "#5c6b88", "font-size": 10.5 }, "Δ " + f2((isNum(b) ? b : 0) - (isNum(a) ? a : 0))));
+  });
+  box.appendChild(svg);
+
+  const cmp = DATA.comparison || {};
+  const delta = (cmp.delta_challenger_minus_baseline || {}).macro_f1;
+  const note = document.createElement("div");
+  note.className = "note ok";
+  note.style.marginTop = "12px";
+  note.innerHTML = "<b>Итог:</b> macro-F1 " +
+    (isNum(delta) && delta >= 0
+      ? "LLM выше на " + f2(Math.abs(delta)) + " п.п."
+      : "LLM ниже на " + f2(Math.abs(isNum(delta) ? delta : 0)) + " п.п.") +
+    " на выборке " + num(st.sample || l.n) + " отзывов. Выборка маленькая — это ориентир, а не значимый вывод.";
+  box.appendChild(note);
+}
+
+/* ============================== examples ============================== */
+function renderExamples() {
+  const box = document.getElementById("examples");
+  box.innerHTML = "";
+  const rows = (DATA.examples || []).slice(0, 8);
+  if (!rows.length) {
+    box.innerHTML = '<div class="hint">Примеров нет.</div>';
+    return;
+  }
+  for (const r of rows) {
+    const el = document.createElement("div");
+    el.className = "exrow " + (r.kind === "ok" ? "ok" : "fail");
+    const why = (r.matched && r.matched.length)
+      ? "сработало: " + r.matched.map(x => "<code>" + esc(x) + "</code>").join(" ")
+      : "ни одно правило не сработало — ушло в «нет жалобы»";
+    el.innerHTML =
+      '<div class="extext">' + esc(r.text) + '</div>' +
+      '<div class="exmeta">' +
+        '<span class="badge gold">gold: ' + esc(labelOf(r.gold)) + '</span>' +
+        '<span class="badge pred">pred: ' + esc(labelOf(r.pred)) + '</span>' +
+        '<span class="badge">' + (r.kind === "ok" ? "верно" : "ошибка") + '</span>' +
+        '<span class="badge">' + esc(r.marketplace) + '</span>' +
+        '<span class="badge">score ' + f2(r.score) + '</span>' +
+      '</div>' +
+      '<div class="why">' + why + '</div>';
+    box.appendChild(el);
+  }
+}
+
+function renderNegations() {
+  const box = document.getElementById("negations");
+  box.innerHTML = "";
+  const rows = DATA.negations || [];
+  if (!rows.length) {
+    box.innerHTML = '<div class="hint">Примеров с отрицанием не нашлось.</div>';
+    return;
+  }
+  for (const r of rows.slice(0, 6)) {
+    const el = document.createElement("div");
+    el.className = "exrow " + (r.ok ? "ok" : "fail");
+    el.innerHTML =
+      '<div class="extext">' + esc(r.short) + '</div>' +
+      '<div class="exmeta">' +
+        '<span class="badge gold">gold: ' + esc(labelOf(r.gold)) + '</span>' +
+        '<span class="badge pred">pred: ' + esc(labelOf(r.pred)) + '</span>' +
+        '<span class="badge">' + (r.ok ? "верно" : "ошибка") + '</span>' +
+      '</div>';
+    box.appendChild(el);
+  }
+}
+
+function renderConfusions() {
+  const box = document.getElementById("confusions");
+  box.innerHTML = "";
+  const rows = DATA.topConfusions || [];
+  if (!rows.length) {
+    box.innerHTML = '<div class="hint">Ошибок нет — подозрительно чисто.</div>';
+    return;
+  }
+  const total = DATA.dataset.n || 1;
+  const tbl = document.createElement("table");
+  tbl.className = "mx";
+  const head = document.createElement("tr");
+  head.innerHTML = '<th class="r">истина</th><th>→</th><th>предсказание</th><th>шт.</th><th>доля</th>';
+  tbl.appendChild(head);
+  for (const r of rows.slice(0, 7)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td class="r">' + esc(labelOf(r.gold)) + '</td><td style="color:#5c6b88">→</td>' +
+      '<td>' + esc(labelOf(r.pred)) + '</td>' +
+      '<td>' + num(r.n) + '</td>' +
+      '<td style="color:#8b9bb8">' + pct(r.n / total, 2) + '</td>';
+    tbl.appendChild(tr);
+  }
+  box.appendChild(tbl);
+
+  const st = DATA.llmStatus || {};
+  const note = document.getElementById("statusNote");
+  if (!st.ran) {
+    note.innerHTML = "<b>Что не сделано:</b> LLM-бэкенд не прогонялся (" +
+      esc(st.reason || "нет ключа") + "). Метрики выше — только правила, " +
+      "сравнения бэкендов в этом прогоне нет.";
+  } else {
+    note.className = "note ok";
+    note.innerHTML = "<b>LLM прогнан</b> на " + num(st.sample) + " отзывах, " +
+      "ошибок API: " + num(st.errors) + ". Выборка меньше полного корпуса — метрики LLM шумные.";
+  }
+}
+
+/* ============================== init ============================== */
+renderHeader();
+renderKpis();
+renderDist();
+renderPrf();
+renderMatrix();
+renderCat();
+renderCompare();
+renderExamples();
+renderNegations();
+renderConfusions();
+</script>
+</body>
+</html>

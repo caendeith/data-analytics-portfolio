@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>On-chain аналитика: стейблкоины и DeFi TVL</title>
+<style>
+  :root{
+    --bg:#0d1014; --panel:#151a21; --panel2:#1b222b; --line:#242d38;
+    --txt:#e6edf3; --muted:#8b97a6; --accent:#3fb950; --accent2:#58a6ff;
+    --red:#f85149; --amber:#d29922;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 22px 64px}
+  header h1{font-size:26px;margin:0 0 6px;letter-spacing:-.4px}
+  header .sub{color:var(--muted);font-size:14px;margin-bottom:4px}
+  header .meta{color:var(--muted);font-size:12.5px;margin-top:10px}
+  header .meta b{color:var(--txt);font-weight:600}
+  .rule{height:1px;background:var(--line);margin:22px 0 26px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:26px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .t{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .v{font-size:24px;font-weight:650;margin-top:6px;letter-spacing:-.5px}
+  .kpi .n{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .up{color:var(--accent)} .down{color:var(--red)} .flat{color:var(--muted)}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 20px 16px;margin-bottom:20px}
+  section h2{font-size:15px;margin:0 0 2px;font-weight:650}
+  section .hint{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:860px){.grid2{grid-template-columns:1fr}}
+  svg{display:block;width:100%;height:auto}
+  .ax{fill:var(--muted);font-size:11px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;
+     text-transform:uppercase;letter-spacing:.4px;padding:0 8px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px 7px 0;border-bottom:1px solid #1a2129;vertical-align:top}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+       border-radius:5px;padding:1px 6px;font-size:11.5px;color:var(--muted)}
+  footer{color:var(--muted);font-size:12.5px;line-height:1.65;margin-top:26px}
+  footer b{color:var(--txt)}
+  .legend{display:flex;gap:16px;color:var(--muted);font-size:12px;margin-top:10px;flex-wrap:wrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Стейблкоины и DeFi: сколько денег в сети и где они лежат</h1>
+    <div class="sub">Разбор публичных on-chain данных: денежная масса стейблкоинов, TVL по сетям и категориям, концентрация рынка.</div>
+    <div class="meta">
+      Снимок данных: <b id="snap"></b> · Источник: <b>публичный API DefiLlama</b> ·
+      Собрано: <b id="gen"></b>
+    </div>
+  </header>
+  <div class="rule"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <h2>Денежная масса стейблкоинов за год</h2>
+    <p class="hint" id="stHint"></p>
+    <div id="stableChart"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent2)"></span>суммарная капитализация стейблкоинов в USD</span>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>TVL по сетям — топ-12</h2>
+      <p class="hint">Сколько денег заблокировано в протоколах на каждой сети.</p>
+      <div id="chainChart"></div>
+    </section>
+    <section>
+      <h2>Категории протоколов</h2>
+      <p class="hint">Куда эти деньги вложены: DEX, лендинг, мосты, стейкинг.</p>
+      <div id="catChart"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Топ-10 протоколов по TVL</h2>
+    <p class="hint">С динамикой за неделю — видно, кто растёт, а кто теряет деньги.</p>
+    <div id="protoTable"></div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>Выросли за неделю</h2>
+      <p class="hint">Протоколы с TVL больше 50 млн — мелочь отсечена, иначе проценты скачут от одного дня.</p>
+      <div id="upTable"></div>
+    </section>
+    <section>
+      <h2>Упали за неделю</h2>
+      <p class="hint">Тот же порог по размеру.</p>
+      <div id="downTable"></div>
+    </section>
+  </div>
+
+  <footer>
+    <b>Что здесь честно, а что нет.</b> Данные — публичный API DefiLlama, снимок на момент сборки; это не исторический ряд из первичных логов блокчейна.
+    TVL протокола складывается по всем сетям, поэтому сумма по категориям не равна сумме по сетям: один протокол может сидеть в пяти сетях.
+    В рейтинг протоколов попадают и централизованные биржи (Binance CEX, OKX, Bybit) — DefiLlama считает их TVL по резервам, и это
+    заметная часть топ-10; если нужен только DeFi, эти строки надо отфильтровать по категории.
+    Денежная масса стейблкоинов — только USD-pegged часть, евро и прочие валюты в эту цифру не входят.
+    <br><br>
+    <b>Как это сделано.</b> Снимок JSON → база SQLite → все цифры считаются SQL-запросами из <code>queries/</code> → SVG-графики на чистом JS, без библиотек и CDN.
+    Один и тот же SQL можно переписать под Dune, если понадобится считать по логам блокчейна, а не по агрегатору.
+    <br><br>
+    <b>Чего пока нет.</b> Адресных метрик (сколько уникальных кошельков в протоколе), потоков в разрезе отдельного дня и сравнения с прошлым годом по каждой сети. Это следующий шаг, а не забытое.
+  </footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+const $ = id => document.getElementById(id);
+const num = v => (v === null || v === undefined || Number.isNaN(v)) ? "—" : v;
+
+function cls(v){ return v > 0.05 ? "up" : v < -0.05 ? "down" : "flat"; }
+function pct(v, d){
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  return (v > 0 ? "+" : "") + v.toFixed(d === undefined ? 1 : d) + "%";
+}
+
+// ---------- KPI ----------
+(function kpis(){
+  const k = DATA.kpi;
+  const cards = [
+    { t: "Стейблкоины в обращении", v: k.stable_usd_fmt, n: "за 30 дней: " + pct(k.d30) + " · за год: " + pct(k.d365), c: cls(k.d30) },
+    { t: "DeFi TVL", v: k.defi_tvl_fmt, n: "протоколов в базе: " + k.protocols, c: "" },
+    { t: "Топ-10 протоколов", v: k.top10_share + "%", n: "доля всего TVL · топ-50: " + k.top50_share + "%", c: "" },
+    { t: "Концентрация (HHI)", v: Math.round(k.hhi), n: k.hhi > 1500 ? "рынок концентрированный" : "рынок раздробленный", c: "" }
+  ];
+  $("kpis").innerHTML = cards.map(c => `
+    <div class="kpi">
+      <div class="t">${c.t}</div>
+      <div class="v">${c.v}</div>
+      <div class="n ${c.c}">${c.n}</div>
+    </div>`).join("");
+})();
+
+// ---------- Линейный график ----------
+(function stable(){
+  const s = DATA.stable_series;
+  $("stHint").textContent = "С " + DATA.stable_first_day + " по " + DATA.meta.snapshot_day +
+    ": минимум " + fmtUsd(Math.min(...s.map(p => p.v))) + ", максимум " + fmtUsd(Math.max(...s.map(p => p.v)));
+  const W = 1080, H = 300, P = { l: 56, r: 16, t: 14, b: 26 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const xs = i => P.l + (s.length <= 1 ? 0 : i / (s.length - 1) * iw);
+  const vals = s.map(p => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const pad = (max - min) * 0.12 || max * 0.05;
+  const lo = min - pad, hi = max + pad;
+  const ys = v => P.t + ih - (v - lo) / (hi - lo) * ih;
+
+  const pts = s.map((p, i) => [xs(i), ys(p.v)]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = line + " L" + xs(s.length - 1).toFixed(1) + " " + (P.t + ih) + " L" + P.l + " " + (P.t + ih) + " Z";
+
+  const ticks = [0, .5, 1].map(f => lo + (hi - lo) * f);
+  const labels = s.length ? [s[0].d, s[Math.floor(s.length / 2)].d, s[s.length - 1].d] : [];
+
+  $("stableChart").innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Динамика капитализации стейблкоинов">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#58a6ff" stop-opacity=".33"/>
+        <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${ticks.map(t => `<line x1="${P.l}" y1="${ys(t).toFixed(1)}" x2="${W - P.r}" y2="${ys(t).toFixed(1)}"
+        stroke="#242d38" stroke-dasharray="3 4"/>
+      <text class="ax" x="${P.l - 8}" y="${(ys(t) + 4).toFixed(1)}" text-anchor="end">${fmtUsd(t)}</text>`).join("")}
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${line}" fill="none" stroke="#58a6ff" stroke-width="2.2" stroke-linejoin="round"/>
+    ${labels.map((d, i) => `<text class="ax" x="${(P.l + iw * (i / 2)).toFixed(1)}" y="${H - 8}"
+        text-anchor="${i === 0 ? "start" : i === 2 ? "end" : "middle"}">${d}</text>`).join("")}
+  </svg>`;
+})();
+
+function fmtUsd(v){
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  const a = Math.abs(v);
+  if (a >= 1e12) return (v / 1e12).toFixed(2) + "T";
+  if (a >= 1e9) return (v / 1e9).toFixed(2) + "B";
+  if (a >= 1e6) return (v / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return Math.round(v).toString();
+}
+
+// ---------- Горизонтальные бары ----------
+function bars(host, rows, opt){
+  const W = 520, rowH = 24, P = { l: opt.labW, r: 74, t: 6, b: 6 };
+  const H = P.t + P.b + rows.length * rowH;
+  const iw = W - P.l - P.r;
+  const max = Math.max(...rows.map(r => r.value)) || 1;
+  const color = opt.color || "#3fb950";
+  $(host).innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet">
+    ${rows.map((r, i) => {
+      const y = P.t + i * rowH;
+      const w = Math.max(1.5, r.value / max * iw);
+      return `
+        <text class="ax" x="${P.l - 8}" y="${y + 15}" text-anchor="end" fill="#8b97a6">${r.label}</text>
+        <rect x="${P.l}" y="${y + 5}" width="${w.toFixed(1)}" height="13" rx="3" fill="${color}" opacity="${0.45 + 0.55 * (r.value / max)}"/>
+        <text class="ax" x="${(P.l + w + 7).toFixed(1)}" y="${y + 15}" fill="#e6edf3">${r.right}</text>`;
+    }).join("")}
+  </svg>`;
+}
+
+bars("chainChart", DATA.chains.map(c => ({
+  label: c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name,
+  value: c.tvl,
+  right: c.share_pct.toFixed(1) + "%"
+})), { labW: 104, color: "#58a6ff" });
+
+bars("catChart", DATA.categories.slice(0, 9).map(c => ({
+  label: c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name,
+  value: c.tvl,
+  right: c.share.toFixed(1) + "%"
+})), { labW: 104, color: "#3fb950" });
+
+// ---------- Таблицы ----------
+function table(host, head, rows){
+  $(host).innerHTML = `<table><thead><tr>${head.map((h, i) =>
+    `<th class="${i ? "num" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr>${r.map((c, i) =>
+      `<td class="${i ? "num" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+table("protoTable", ["Протокол", "Категория", "TVL", "7 дней"],
+  DATA.top_protocols.map(p => [
+    p.name,
+    `<span class="tag">${p.category}</span>`,
+    p.tvl_fmt,
+    `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+table("upTable", ["Протокол", "TVL", "7 дней"],
+  DATA.movers_up.map(p => [
+    p.name, p.tvl_fmt, `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+table("downTable", ["Протокол", "TVL", "7 дней"],
+  DATA.movers_down.map(p => [
+    p.name, p.tvl_fmt, `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+$("snap").textContent = DATA.meta.snapshot_day;
+$("gen").textContent = DATA.meta.generated_at;
+</script>
+</body>
+</html>

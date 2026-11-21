@@ -91,9 +91,10 @@
 <header>
   <div class="eyebrow">Портфолио · аналитика данных</div>
   <h1>Дамир Зиатдинов <span>— аналитик данных</span></h1>
-  <p class="lede">Четыре проекта, которые показывают не «я умею в аналитику», а конкретные вещи:
+  <p class="lede">Шесть проектов, которые показывают не «я умею в аналитику», а конкретные вещи:
   <strong>построить дашборд</strong>, <strong>разобрать эксперимент</strong>,
-  <strong>собрать пайплайн</strong> и <strong>вытащить данные с сайта в чистом виде</strong>.
+  <strong>собрать пайплайн</strong>, <strong>вытащить данные с сайта</strong>,
+  <strong>посчитать on-chain метрики</strong> и <strong>разметить тексты</strong>.
   Всё работает локально, без облаков и платных сервисов.</p>
 </header>
 
@@ -149,6 +150,32 @@
       <span class="tag">openpyxl</span><span class="tag">21 тест</span>
     </div>
     <a class="go" href="04-parser/README.md">Смотреть код →</a>
+  </div>
+
+  <div class="card">
+    <div class="num">05</div>
+    <h2>On-chain аналитика: стейблкоины и DeFi TVL</h2>
+    <p>282 млрд $ стейблкоинов и 422 млрд $ в DeFi: снимок публичного API → SQLite →
+    SQL-запросы → дашборд. Слойность, концентрация рынка (HHI, доля топ-10),
+    осознанные оговорки о двойном счёте TVL. 23 теста, сборка офлайн.</p>
+    <div class="stack">
+      <span class="tag">SQL</span><span class="tag">SQLite</span>
+      <span class="tag">DefiLlama API</span><span class="tag">HHI</span>
+    </div>
+    <a class="go" href="05-onchain/dashboard.html">Открыть дашборд →</a>
+  </div>
+
+  <div class="card">
+    <div class="num">06</div>
+    <h2>Разбор отзывов: правила против LLM</h2>
+    <p>Классификация жалоб по 8 классам на 1 600 отзывах: macro-F1 89.8%, матрица ошибок
+    и разбор провалов с объяснением, какие фрагменты сработали. Показано, где правила
+    ломаются и зачем тогда нужен LLM. 36 тестов.</p>
+    <div class="stack">
+      <span class="tag">NLP</span><span class="tag">regex + отрицания</span>
+      <span class="tag">macro-F1</span><span class="tag">36 тестов</span>
+    </div>
+    <a class="go" href="06-ai-reviews/report.html">Открыть отчёт →</a>
   </div>
 
 </div>

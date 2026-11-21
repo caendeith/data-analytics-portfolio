@@ -15,3 +15,10 @@ node_modules/
 Thumbs.db
 desktop.ini
 .DS_Store
+# Артефакт 05: снимок API весит 12 МБ и восстанавливается командой node bin/fetch.mjs
+05-onchain/data/
+05-onchain/out/*.db
+05-onchain/out/payload.json
+
+# Артефакт 06: выгрузки пересобираются python build.py
+06-ai-reviews/out/

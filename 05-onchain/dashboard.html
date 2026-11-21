@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>On-chain аналитика: стейблкоины и DeFi TVL</title>
+<style>
+  :root{
+    --bg:#0d1014; --panel:#151a21; --panel2:#1b222b; --line:#242d38;
+    --txt:#e6edf3; --muted:#8b97a6; --accent:#3fb950; --accent2:#58a6ff;
+    --red:#f85149; --amber:#d29922;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 22px 64px}
+  header h1{font-size:26px;margin:0 0 6px;letter-spacing:-.4px}
+  header .sub{color:var(--muted);font-size:14px;margin-bottom:4px}
+  header .meta{color:var(--muted);font-size:12.5px;margin-top:10px}
+  header .meta b{color:var(--txt);font-weight:600}
+  .rule{height:1px;background:var(--line);margin:22px 0 26px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:26px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .t{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .v{font-size:24px;font-weight:650;margin-top:6px;letter-spacing:-.5px}
+  .kpi .n{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .up{color:var(--accent)} .down{color:var(--red)} .flat{color:var(--muted)}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 20px 16px;margin-bottom:20px}
+  section h2{font-size:15px;margin:0 0 2px;font-weight:650}
+  section .hint{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:860px){.grid2{grid-template-columns:1fr}}
+  svg{display:block;width:100%;height:auto}
+  .ax{fill:var(--muted);font-size:11px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;
+     text-transform:uppercase;letter-spacing:.4px;padding:0 8px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px 7px 0;border-bottom:1px solid #1a2129;vertical-align:top}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+       border-radius:5px;padding:1px 6px;font-size:11.5px;color:var(--muted)}
+  footer{color:var(--muted);font-size:12.5px;line-height:1.65;margin-top:26px}
+  footer b{color:var(--txt)}
+  .legend{display:flex;gap:16px;color:var(--muted);font-size:12px;margin-top:10px;flex-wrap:wrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Стейблкоины и DeFi: сколько денег в сети и где они лежат</h1>
+    <div class="sub">Разбор публичных on-chain данных: денежная масса стейблкоинов, TVL по сетям и категориям, концентрация рынка.</div>
+    <div class="meta">
+      Снимок данных: <b id="snap"></b> · Источник: <b>публичный API DefiLlama</b> ·
+      Собрано: <b id="gen"></b>
+    </div>
+  </header>
+  <div class="rule"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <h2>Денежная масса стейблкоинов за год</h2>
+    <p class="hint" id="stHint"></p>
+    <div id="stableChart"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--accent2)"></span>суммарная капитализация стейблкоинов в USD</span>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>TVL по сетям — топ-12</h2>
+      <p class="hint">Сколько денег заблокировано в протоколах на каждой сети.</p>
+      <div id="chainChart"></div>
+    </section>
+    <section>
+      <h2>Категории протоколов</h2>
+      <p class="hint">Куда эти деньги вложены: DEX, лендинг, мосты, стейкинг.</p>
+      <div id="catChart"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Топ-10 протоколов по TVL</h2>
+    <p class="hint">С динамикой за неделю — видно, кто растёт, а кто теряет деньги.</p>
+    <div id="protoTable"></div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>Выросли за неделю</h2>
+      <p class="hint">Протоколы с TVL больше 50 млн — мелочь отсечена, иначе проценты скачут от одного дня.</p>
+      <div id="upTable"></div>
+    </section>
+    <section>
+      <h2>Упали за неделю</h2>
+      <p class="hint">Тот же порог по размеру.</p>
+      <div id="downTable"></div>
+    </section>
+  </div>
+
+  <footer>
+    <b>Что здесь честно, а что нет.</b> Данные — публичный API DefiLlama, снимок на момент сборки; это не исторический ряд из первичных логов блокчейна.
+    TVL протокола складывается по всем сетям, поэтому сумма по категориям не равна сумме по сетям: один протокол может сидеть в пяти сетях.
+    В рейтинг протоколов попадают и централизованные биржи (Binance CEX, OKX, Bybit) — DefiLlama считает их TVL по резервам, и это
+    заметная часть топ-10; если нужен только DeFi, эти строки надо отфильтровать по категории.
+    Денежная масса стейблкоинов — только USD-pegged часть, евро и прочие валюты в эту цифру не входят.
+    <br><br>
+    <b>Как это сделано.</b> Снимок JSON → база SQLite → все цифры считаются SQL-запросами из <code>queries/</code> → SVG-графики на чистом JS, без библиотек и CDN.
+    Один и тот же SQL можно переписать под Dune, если понадобится считать по логам блокчейна, а не по агрегатору.
+    <br><br>
+    <b>Чего пока нет.</b> Адресных метрик (сколько уникальных кошельков в протоколе), потоков в разрезе отдельного дня и сравнения с прошлым годом по каждой сети. Это следующий шаг, а не забытое.
+  </footer>
+</div>
+
+<script>
+const DATA = {"meta": {"generated_at": "2026-11-21 09:48 UTC", "source": "DefiLlama public API (stablecoins.llama.fi, api.llama.fi)", "snapshot_day": "2026-11-21"}, "kpi": {"stable_usd": 282530042892.33, "stable_usd_fmt": "282.53B", "d7": -1.5752236753026905, "d30": -6.308436542642784, "d90": -5.489467213460947, "d365": -5.121958590472964, "d7_fmt": "-1.6%", "d30_fmt": "-6.3%", "d90_fmt": "-5.5%", "d365_fmt": "-5.1%", "defi_tvl_fmt": "422.61B", "defi_tvl": 422613124199.0395, "protocols": 5569, "top10_share": 55.0, "top50_share": 83.5, "hhi": 775.0}, "stable_series": [{"d": "2025-11-21", "v": 297782330553.0}, {"d": "2025-11-23", "v": 297696260714.0}, {"d": "2025-11-25", "v": 298763698165.0}, {"d": "2025-11-27", "v": 300178677083.0}, {"d": "2025-11-29", "v": 301123382614.0}, {"d": "2025-12-01", "v": 300975331700.0}, {"d": "2025-12-03", "v": 302611639214.0}, {"d": "2025-12-05", "v": 303268642393.0}, {"d": "2025-12-07", "v": 303410518629.0}, {"d": "2025-12-09", "v": 303961919031.0}, {"d": "2025-12-11", "v": 304366590859.0}, {"d": "2025-12-13", "v": 305421744853.0}, {"d": "2025-12-15", "v": 305005229133.0}, {"d": "2025-12-17", "v": 304782479847.0}, {"d": "2025-12-19", "v": 304168862047.0}, {"d": "2025-12-21", "v": 305746048388.0}, {"d": "2025-12-23", "v": 304599812525.0}, {"d": "2025-12-25", "v": 303605159714.0}, {"d": "2025-12-27", "v": 303708417185.0}, {"d": "2025-12-29", "v": 303421675920.0}, {"d": "2025-12-31", "v": 302959568172.0}, {"d": "2026-01-02", "v": 302272324934.0}, {"d": "2026-01-04", "v": 302942303382.0}, {"d": "2026-01-06", "v": 303840900314.0}, {"d": "2026-01-08", "v": 303152415261.0}, {"d": "2026-01-10", "v": 303113005168.0}, {"d": "2026-01-12", "v": 302973323132.0}, {"d": "2026-01-14", "v": 303839131050.0}, {"d": "2026-01-16", "v": 305534151848.0}, {"d": "2026-01-18", "v": 306315961358.0}, {"d": "2026-01-20", "v": 305937098396.0}, {"d": "2026-01-22", "v": 303445001581.0}, {"d": "2026-01-24", "v": 303231142913.0}, {"d": "2026-01-26", "v": 303189916544.0}, {"d": "2026-01-28", "v": 302505487173.0}, {"d": "2026-01-30", "v": 300775767516.0}, {"d": "2026-02-01", "v": 299122192030.0}, {"d": "2026-02-03", "v": 299665054354.0}, {"d": "2026-02-05", "v": 300033514659.0}, {"d": "2026-02-07", "v": 299659525799.0}, {"d": "2026-02-09", "v": 301416711121.0}, {"d": "2026-02-11", "v": 301039231295.0}, {"d": "2026-02-13", "v": 300706417514.0}, {"d": "2026-02-15", "v": 301096650644.0}, {"d": "2026-02-17", "v": 301374968394.0}, {"d": "2026-02-19", "v": 301141918637.0}, {"d": "2026-02-21", "v": 300695943709.0}, {"d": "2026-02-23", "v": 301782897038.0}, {"d": "2026-02-25", "v": 301827377791.0}, {"d": "2026-02-27", "v": 301922646617.0}, {"d": "2026-03-01", "v": 302365741302.0}, {"d": "2026-03-03", "v": 302989376044.0}, {"d": "2026-03-05", "v": 304183127853.0}, {"d": "2026-03-07", "v": 305315617854.0}, {"d": "2026-03-09", "v": 305495566540.0}, {"d": "2026-03-11", "v": 306855442997.0}, {"d": "2026-03-13", "v": 307512039452.0}, {"d": "2026-03-15", "v": 307878655316.0}, {"d": "2026-03-17", "v": 307893542172.0}, {"d": "2026-03-19", "v": 307416637154.0}, {"d": "2026-03-21", "v": 307862363729.0}, {"d": "2026-03-23", "v": 307833539500.0}, {"d": "2026-03-25", "v": 307331423803.0}, {"d": "2026-03-27", "v": 306431460249.0}, {"d": "2026-03-29", "v": 306167349932.0}, {"d": "2026-03-31", "v": 306331718035.0}, {"d": "2026-04-02", "v": 307000627652.0}, {"d": "2026-04-04", "v": 307515706170.0}, {"d": "2026-04-06", "v": 307453205276.0}, {"d": "2026-04-08", "v": 307597433566.0}, {"d": "2026-04-10", "v": 308041860228.0}, {"d": "2026-04-12", "v": 308776109004.0}, {"d": "2026-04-14", "v": 308959632036.0}, {"d": "2026-04-16", "v": 309857788701.0}, {"d": "2026-04-18", "v": 311175937815.0}, {"d": "2026-04-20", "v": 310434363650.0}, {"d": "2026-04-22", "v": 311211731841.0}, {"d": "2026-04-24", "v": 310826907952.0}, {"d": "2026-04-26", "v": 310696965237.0}, {"d": "2026-04-28", "v": 310465427685.0}, {"d": "2026-04-30", "v": 309792208263.0}, {"d": "2026-05-02", "v": 310696009797.0}, {"d": "2026-05-04", "v": 311110676616.0}, {"d": "2026-05-06", "v": 312420861916.0}, {"d": "2026-05-08", "v": 312831341883.0}, {"d": "2026-05-10", "v": 312188841328.0}, {"d": "2026-05-12", "v": 312831057165.0}, {"d": "2026-05-14", "v": 312155532138.0}, {"d": "2026-05-16", "v": 312577591162.0}, {"d": "2026-05-18", "v": 312786343393.0}, {"d": "2026-05-20", "v": 312091184499.0}, {"d": "2026-05-22", "v": 312403111126.0}, {"d": "2026-05-24", "v": 312422211235.0}, {"d": "2026-05-26", "v": 312312058748.0}, {"d": "2026-05-28", "v": 311413509357.0}, {"d": "2026-05-30", "v": 310040992799.0}, {"d": "2026-06-01", "v": 309631004047.0}, {"d": "2026-06-03", "v": 308969270887.0}, {"d": "2026-06-05", "v": 307130156273.0}, {"d": "2026-06-07", "v": 306055095816.0}, {"d": "2026-06-09", "v": 306491567762.0}, {"d": "2026-06-11", "v": 305323105228.0}, {"d": "2026-06-13", "v": 304848840986.0}, {"d": "2026-06-15", "v": 304819655074.0}, {"d": "2026-06-17", "v": 305073710088.0}, {"d": "2026-06-19", "v": 304892511241.0}, {"d": "2026-06-21", "v": 304989996316.0}, {"d": "2026-06-23", "v": 305038548228.0}, {"d": "2026-06-25", "v": 303986310286.0}, {"d": "2026-06-27", "v": 302896746316.0}, {"d": "2026-06-29", "v": 302556884835.0}, {"d": "2026-07-01", "v": 301140687764.0}, {"d": "2026-07-03", "v": 301101400741.0}, {"d": "2026-07-05", "v": 300845349221.0}, {"d": "2026-07-07", "v": 301369215364.0}, {"d": "2026-07-09", "v": 299185377994.0}, {"d": "2026-07-11", "v": 299840917041.0}, {"d": "2026-07-13", "v": 299577110445.0}, {"d": "2026-07-15", "v": 298586197920.0}, {"d": "2026-07-17", "v": 298373960250.0}, {"d": "2026-07-19", "v": 298711047145.0}, {"d": "2026-07-21", "v": 298390869601.0}, {"d": "2026-07-23", "v": 298193355094.0}, {"d": "2026-07-25", "v": 298919834091.0}, {"d": "2026-07-27", "v": 298362347998.0}, {"d": "2026-07-29", "v": 296911999290.0}, {"d": "2026-07-31", "v": 295880514182.0}, {"d": "2026-08-02", "v": 295795083840.0}, {"d": "2026-08-04", "v": 295951679746.0}, {"d": "2026-08-06", "v": 296310645375.0}, {"d": "2026-08-08", "v": 296485164916.0}, {"d": "2026-08-10", "v": 296554742350.0}, {"d": "2026-08-12", "v": 296557312357.0}, {"d": "2026-08-14", "v": 296532860974.0}, {"d": "2026-08-16", "v": 296601060855.0}, {"d": "2026-08-18", "v": 296725182176.0}, {"d": "2026-08-20", "v": 297389739470.0}, {"d": "2026-08-22", "v": 298834348832.0}, {"d": "2026-08-24", "v": 299016899196.0}, {"d": "2026-08-26", "v": 299206969737.0}, {"d": "2026-08-28", "v": 299633841684.0}, {"d": "2026-08-30", "v": 299247806819.0}, {"d": "2026-09-01", "v": 299328276576.0}, {"d": "2026-09-03", "v": 299771192475.0}, {"d": "2026-09-05", "v": 301018245727.0}, {"d": "2026-09-07", "v": 301077780111.0}, {"d": "2026-09-09", "v": 301210289219.0}, {"d": "2026-09-11", "v": 300745372697.0}, {"d": "2026-09-13", "v": 300935685785.0}, {"d": "2026-09-15", "v": 301017383014.0}, {"d": "2026-09-17", "v": 300378681146.0}, {"d": "2026-09-19", "v": 301287173957.0}, {"d": "2026-09-21", "v": 301471053732.0}, {"d": "2026-09-23", "v": 302621592296.0}, {"d": "2026-09-25", "v": 302772888792.0}, {"d": "2026-09-27", "v": 303078817060.0}, {"d": "2026-09-29", "v": 304184641087.0}, {"d": "2026-10-01", "v": 303631163053.0}, {"d": "2026-10-03", "v": 304799498104.0}, {"d": "2026-10-05", "v": 305122875757.0}, {"d": "2026-10-07", "v": 305703876440.0}, {"d": "2026-10-09", "v": 304464693273.0}, {"d": "2026-10-11", "v": 303911425145.0}, {"d": "2026-10-13", "v": 303944978330.0}, {"d": "2026-10-15", "v": 303396081415.0}, {"d": "2026-10-17", "v": 302730585598.0}, {"d": "2026-10-19", "v": 302484776066.0}, {"d": "2026-10-21", "v": 301385968173.0}, {"d": "2026-10-23", "v": 301115057621.0}, {"d": "2026-10-25", "v": 300465034420.0}, {"d": "2026-10-27", "v": 299449367512.0}, {"d": "2026-10-29", "v": 297962967705.0}, {"d": "2026-10-31", "v": 296988795521.0}, {"d": "2026-11-02", "v": 295652627159.0}, {"d": "2026-11-04", "v": 293836472820.0}, {"d": "2026-11-06", "v": 292330790516.0}, {"d": "2026-11-08", "v": 291492853123.0}, {"d": "2026-11-10", "v": 290376223601.0}, {"d": "2026-11-12", "v": 289064734763.0}, {"d": "2026-11-14", "v": 287051750019.0}, {"d": "2026-11-16", "v": 287098382122.0}, {"d": "2026-11-18", "v": 286256784377.0}, {"d": "2026-11-21", "v": 282530042892.0}], "stable_first_day": "2025-11-21", "chains": [{"name": "Ethereum", "tvl": 34717142317.77774, "share_pct": 52.34}, {"name": "Base", "tvl": 4552879438.131161, "share_pct": 6.86}, {"name": "Solana", "tvl": 4515678817.189623, "share_pct": 6.81}, {"name": "Tron", "tvl": 4340811046.979463, "share_pct": 6.54}, {"name": "BSC", "tvl": 4158639865.7834296, "share_pct": 6.27}, {"name": "Bitcoin", "tvl": 2914085421.7993293, "share_pct": 4.39}, {"name": "Hyperliquid L1", "tvl": 2080230067.232845, "share_pct": 3.14}, {"name": "Arbitrum", "tvl": 1193746897.7913187, "share_pct": 1.8}, {"name": "Robinhood Chain", "tvl": 945312685.6432728, "share_pct": 1.43}, {"name": "Monad", "tvl": 783899451.4802425, "share_pct": 1.18}, {"name": "Arc", "tvl": 588925066.0442973, "share_pct": 0.89}, {"name": "Polygon", "tvl": 588806598.735117, "share_pct": 0.89}], "categories": [{"name": "CEX", "tvl": 206445400542.0, "tvl_fmt": "206.45B", "protocols": 78, "share": 48.8}, {"name": "Bridge", "tvl": 54399619456.0, "tvl_fmt": "54.40B", "protocols": 145, "share": 12.9}, {"name": "Lending", "tvl": 43068719698.0, "tvl_fmt": "43.07B", "protocols": 486, "share": 10.2}, {"name": "Liquid Staking", "tvl": 38003826416.0, "tvl_fmt": "38.00B", "protocols": 250, "share": 9.0}, {"name": "Dexs", "tvl": 10349494994.0, "tvl_fmt": "10.35B", "protocols": 1675, "share": 2.4}, {"name": "Canonical Bridge", "tvl": 10220754688.0, "tvl_fmt": "10.22B", "protocols": 79, "share": 2.4}, {"name": "Staking Pool", "tvl": 9691507542.0, "tvl_fmt": "9.69B", "protocols": 30, "share": 2.3}, {"name": "Risk Curators", "tvl": 8860665588.0, "tvl_fmt": "8.86B", "protocols": 97, "share": 2.1}, {"name": "Basis Trading", "tvl": 7566236040.0, "tvl_fmt": "7.57B", "protocols": 40, "share": 1.8}, {"name": "Onchain Capital Allocator", "tvl": 7125151211.0, "tvl_fmt": "7.13B", "protocols": 80, "share": 1.7}, {"name": "Restaking", "tvl": 6685169733.0, "tvl_fmt": "6.69B", "protocols": 13, "share": 1.6}, {"name": "CDP", "tvl": 3965999541.0, "tvl_fmt": "3.97B", "protocols": 183, "share": 0.9}], "top_protocols": [{"name": "Binance CEX", "category": "CEX", "tvl": 106589355770.0, "tvl_fmt": "106.59B", "ch7": -8.68}, {"name": "OKX", "category": "CEX", "tvl": 25896633831.0, "tvl_fmt": "25.90B", "ch7": -0.28}, {"name": "LayerZero V2", "category": "Bridge", "tvl": 17907979888.0, "tvl_fmt": "17.91B", "ch7": 0.98}, {"name": "Lido", "category": "Liquid Staking", "tvl": 15952444123.0, "tvl_fmt": "15.95B", "ch7": -14.13}, {"name": "Aave V3", "category": "Lending", "tvl": 14698210728.0, "tvl_fmt": "14.70B", "ch7": 3.05}, {"name": "Bybit", "category": "CEX", "tvl": 12742309256.0, "tvl_fmt": "12.74B", "ch7": -6.49}, {"name": "Bitfinex", "category": "CEX", "tvl": 11042503280.0, "tvl_fmt": "11.04B", "ch7": -11.28}, {"name": "Robinhood", "category": "CEX", "tvl": 10400761801.0, "tvl_fmt": "10.40B", "ch7": -13.86}, {"name": "Morpho Blue", "category": "Lending", "tvl": 9074686577.0, "tvl_fmt": "9.07B", "ch7": -12.16}, {"name": "SSV Network", "category": "Staking Pool", "tvl": 8242854421.0, "tvl_fmt": "8.24B", "ch7": -17.37}], "movers_up": [{"name": "Tydro", "category": "Lending", "tvl_fmt": "438.56M", "ch7": 297.67}, {"name": "Mantle Bridge", "category": "Canonical Bridge", "tvl_fmt": "305.13M", "ch7": 229.08}, {"name": "Poloniex", "category": "CEX", "tvl_fmt": "2.21B", "ch7": 172.98}, {"name": "Shift DeFi", "category": "Yield", "tvl_fmt": "77.59M", "ch7": 63.0}, {"name": "Optimism Bridge", "category": "Canonical Bridge", "tvl_fmt": "727.55M", "ch7": 57.1}, {"name": "Kraken Bitcoin", "category": "Bridge", "tvl_fmt": "722.42M", "ch7": 13.34}, {"name": "Hyperlane", "category": "Cross Chain Bridge", "tvl_fmt": "72.92M", "ch7": 12.91}, {"name": "RocketSwap Anubis V2", "category": "Dexs", "tvl_fmt": "390.66M", "ch7": 11.67}, {"name": "M0", "category": "Stablecoin Issuer", "tvl_fmt": "280.39M", "ch7": 11.06}, {"name": "Bitvavo", "category": "CEX", "tvl_fmt": "354.34M", "ch7": 10.91}], "movers_down": [{"name": "Figure Markets Prime", "category": "Lending", "tvl_fmt": "81.67M", "ch7": -57.11}, {"name": "SUNSwap V3", "category": "Dexs", "tvl_fmt": "79.69M", "ch7": -48.32}, {"name": "Backpack", "category": "CEX", "tvl_fmt": "280.19M", "ch7": -38.33}, {"name": "Sky Lending", "category": "CDP", "tvl_fmt": "2.40B", "ch7": -35.83}, {"name": "Hyperliquid Spot Orderbook", "category": "Dexs", "tvl_fmt": "85.02M", "ch7": -31.27}, {"name": "SparkLend", "category": "Lending", "tvl_fmt": "3.06B", "ch7": -30.03}, {"name": "Defi Saver Asset Management", "category": "CDP Manager", "tvl_fmt": "193.72M", "ch7": -29.93}, {"name": "AO Bridge", "category": "Canonical Bridge", "tvl_fmt": "51.68M", "ch7": -29.76}, {"name": "Spark Liquidity Layer", "category": "Onchain Capital Allocator", "tvl_fmt": "2.05B", "ch7": -28.09}, {"name": "Sky Money", "category": "Risk Curators", "tvl_fmt": "63.96M", "ch7": -26.41}]};
+const $ = id => document.getElementById(id);
+const num = v => (v === null || v === undefined || Number.isNaN(v)) ? "—" : v;
+
+function cls(v){ return v > 0.05 ? "up" : v < -0.05 ? "down" : "flat"; }
+function pct(v, d){
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  return (v > 0 ? "+" : "") + v.toFixed(d === undefined ? 1 : d) + "%";
+}
+
+// ---------- KPI ----------
+(function kpis(){
+  const k = DATA.kpi;
+  const cards = [
+    { t: "Стейблкоины в обращении", v: k.stable_usd_fmt, n: "за 30 дней: " + pct(k.d30) + " · за год: " + pct(k.d365), c: cls(k.d30) },
+    { t: "DeFi TVL", v: k.defi_tvl_fmt, n: "протоколов в базе: " + k.protocols, c: "" },
+    { t: "Топ-10 протоколов", v: k.top10_share + "%", n: "доля всего TVL · топ-50: " + k.top50_share + "%", c: "" },
+    { t: "Концентрация (HHI)", v: Math.round(k.hhi), n: k.hhi > 1500 ? "рынок концентрированный" : "рынок раздробленный", c: "" }
+  ];
+  $("kpis").innerHTML = cards.map(c => `
+    <div class="kpi">
+      <div class="t">${c.t}</div>
+      <div class="v">${c.v}</div>
+      <div class="n ${c.c}">${c.n}</div>
+    </div>`).join("");
+})();
+
+// ---------- Линейный график ----------
+(function stable(){
+  const s = DATA.stable_series;
+  $("stHint").textContent = "С " + DATA.stable_first_day + " по " + DATA.meta.snapshot_day +
+    ": минимум " + fmtUsd(Math.min(...s.map(p => p.v))) + ", максимум " + fmtUsd(Math.max(...s.map(p => p.v)));
+  const W = 1080, H = 300, P = { l: 56, r: 16, t: 14, b: 26 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const xs = i => P.l + (s.length <= 1 ? 0 : i / (s.length - 1) * iw);
+  const vals = s.map(p => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const pad = (max - min) * 0.12 || max * 0.05;
+  const lo = min - pad, hi = max + pad;
+  const ys = v => P.t + ih - (v - lo) / (hi - lo) * ih;
+
+  const pts = s.map((p, i) => [xs(i), ys(p.v)]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = line + " L" + xs(s.length - 1).toFixed(1) + " " + (P.t + ih) + " L" + P.l + " " + (P.t + ih) + " Z";
+
+  const ticks = [0, .5, 1].map(f => lo + (hi - lo) * f);
+  const labels = s.length ? [s[0].d, s[Math.floor(s.length / 2)].d, s[s.length - 1].d] : [];
+
+  $("stableChart").innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Динамика капитализации стейблкоинов">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#58a6ff" stop-opacity=".33"/>
+        <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${ticks.map(t => `<line x1="${P.l}" y1="${ys(t).toFixed(1)}" x2="${W - P.r}" y2="${ys(t).toFixed(1)}"
+        stroke="#242d38" stroke-dasharray="3 4"/>
+      <text class="ax" x="${P.l - 8}" y="${(ys(t) + 4).toFixed(1)}" text-anchor="end">${fmtUsd(t)}</text>`).join("")}
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${line}" fill="none" stroke="#58a6ff" stroke-width="2.2" stroke-linejoin="round"/>
+    ${labels.map((d, i) => `<text class="ax" x="${(P.l + iw * (i / 2)).toFixed(1)}" y="${H - 8}"
+        text-anchor="${i === 0 ? "start" : i === 2 ? "end" : "middle"}">${d}</text>`).join("")}
+  </svg>`;
+})();
+
+function fmtUsd(v){
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  const a = Math.abs(v);
+  if (a >= 1e12) return (v / 1e12).toFixed(2) + "T";
+  if (a >= 1e9) return (v / 1e9).toFixed(2) + "B";
+  if (a >= 1e6) return (v / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return Math.round(v).toString();
+}
+
+// ---------- Горизонтальные бары ----------
+function bars(host, rows, opt){
+  const W = 520, rowH = 24, P = { l: opt.labW, r: 74, t: 6, b: 6 };
+  const H = P.t + P.b + rows.length * rowH;
+  const iw = W - P.l - P.r;
+  const max = Math.max(...rows.map(r => r.value)) || 1;
+  const color = opt.color || "#3fb950";
+  $(host).innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet">
+    ${rows.map((r, i) => {
+      const y = P.t + i * rowH;
+      const w = Math.max(1.5, r.value / max * iw);
+      return `
+        <text class="ax" x="${P.l - 8}" y="${y + 15}" text-anchor="end" fill="#8b97a6">${r.label}</text>
+        <rect x="${P.l}" y="${y + 5}" width="${w.toFixed(1)}" height="13" rx="3" fill="${color}" opacity="${0.45 + 0.55 * (r.value / max)}"/>
+        <text class="ax" x="${(P.l + w + 7).toFixed(1)}" y="${y + 15}" fill="#e6edf3">${r.right}</text>`;
+    }).join("")}
+  </svg>`;
+}
+
+bars("chainChart", DATA.chains.map(c => ({
+  label: c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name,
+  value: c.tvl,
+  right: c.share_pct.toFixed(1) + "%"
+})), { labW: 104, color: "#58a6ff" });
+
+bars("catChart", DATA.categories.slice(0, 9).map(c => ({
+  label: c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name,
+  value: c.tvl,
+  right: c.share.toFixed(1) + "%"
+})), { labW: 104, color: "#3fb950" });
+
+// ---------- Таблицы ----------
+function table(host, head, rows){
+  $(host).innerHTML = `<table><thead><tr>${head.map((h, i) =>
+    `<th class="${i ? "num" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr>${r.map((c, i) =>
+      `<td class="${i ? "num" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+table("protoTable", ["Протокол", "Категория", "TVL", "7 дней"],
+  DATA.top_protocols.map(p => [
+    p.name,
+    `<span class="tag">${p.category}</span>`,
+    p.tvl_fmt,
+    `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+table("upTable", ["Протокол", "TVL", "7 дней"],
+  DATA.movers_up.map(p => [
+    p.name, p.tvl_fmt, `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+table("downTable", ["Протокол", "TVL", "7 дней"],
+  DATA.movers_down.map(p => [
+    p.name, p.tvl_fmt, `<span class="${cls(p.ch7)}">${pct(p.ch7)}</span>`
+  ]));
+
+$("snap").textContent = DATA.meta.snapshot_day;
+$("gen").textContent = DATA.meta.generated_at;
+</script>
+</body>
+</html>
