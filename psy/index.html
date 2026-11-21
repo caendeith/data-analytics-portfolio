@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дамир Зиатдинов — психологическое консультирование онлайн</title>
+<meta name="description" content="Консультирую нейроотличных взрослых: аутизм, СДВГ, отношения и самопринятие. Онлайн, 50 минут, 1 500 ₽. Учусь на психолога, работаю в рамках учебной практики.">
+<meta property="og:title" content="Дамир Зиатдинов — психологическое консультирование онлайн">
+<meta property="og:description" content="Пространство, где не нужно быть удобным. Нейроотличные взрослые: аутизм, СДВГ, отношения, самопринятие. Онлайн, 50 минут.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://caendeith.ru/psy/">
+<link rel="canonical" href="https://caendeith.ru/psy/">
+<style>
+  :root{
+    --bg:#f6f2ec; --card:#fffdfa; --ink:#23201c; --muted:#6d655c;
+    --line:#e2d9cd; --accent:#4a6b5d; --accent-soft:#e8efe9; --warn:#8a5a3b;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:17px/1.65 "Georgia","Times New Roman",serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  h1,h2,h3{line-height:1.25;font-weight:600;margin:0}
+  a{color:var(--accent)}
+  a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+  header.hero{padding:72px 0 40px;border-bottom:1px solid var(--line)}
+  .badge{
+    display:inline-block;font:600 14px/1 ui-sans-serif,system-ui,sans-serif;
+    letter-spacing:.02em;color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:9px 15px;margin-bottom:26px;
+  }
+  h1{font-size:clamp(30px,5vw,44px);letter-spacing:-.01em}
+  .lead{font-size:clamp(17px,2.2vw,20px);color:var(--muted);margin:18px 0 0;max-width:38em}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+  .btn{
+    display:inline-block;font:600 16px/1 ui-sans-serif,system-ui,sans-serif;
+    padding:15px 22px;border-radius:12px;text-decoration:none;border:1px solid transparent;
+  }
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:#3d5a4e}
+  .btn.ghost{border-color:var(--line);color:var(--ink);background:var(--card)}
+  .btn.ghost:hover{border-color:var(--accent)}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  h2{font-size:clamp(23px,3.4vw,29px);margin-bottom:8px}
+  .sub{color:var(--muted);margin:0 0 26px;font-size:16px}
+
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 20px 18px;
+  }
+  .card h3{font-size:17.5px;margin-bottom:7px}
+  .card p{margin:0;color:var(--muted);font-size:15.5px;line-height:1.55}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;gap:14px}
+  ol.steps li{
+    counter-increment:s;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:18px 20px 18px 62px;position:relative;
+  }
+  ol.steps li::before{
+    content:counter(s);position:absolute;left:18px;top:17px;width:28px;height:28px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent);
+    font:600 15px/28px ui-sans-serif,system-ui,sans-serif;text-align:center;
+  }
+  ol.steps strong{display:block;margin-bottom:4px;font-size:16.5px}
+  ol.steps span{color:var(--muted);font-size:15.5px}
+
+  .price{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;
+    display:grid;gap:22px;grid-template-columns:1fr 1fr;
+  }
+  @media(max-width:640px){.price{grid-template-columns:1fr}}
+  .price .big{font-size:34px;font-weight:600;letter-spacing:-.02em}
+  .price ul{margin:12px 0 0;padding-left:20px;color:var(--muted);font-size:15.5px}
+  .price li{margin-bottom:6px}
+
+  ul.bounds{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  ul.bounds li{padding-left:26px;position:relative;color:var(--muted)}
+  ul.bounds li::before{content:"—";position:absolute;left:0;color:var(--accent)}
+  ul.bounds li b{color:var(--ink);font-weight:600}
+
+  .about{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+  .about .text{flex:1 1 320px}
+  .about p{margin:0 0 12px;color:var(--muted)}
+  .about p:last-child{margin-bottom:0}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:10px}
+  details summary{
+    cursor:pointer;padding:16px 20px;font:600 16px/1.4 ui-sans-serif,system-ui,sans-serif;
+    list-style:none;
+  }
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";float:right;color:var(--accent);font-weight:600}
+  details[open] summary::after{content:"–"}
+  details .ans{padding:0 20px 18px;color:var(--muted);font-size:15.5px}
+
+  .final{text-align:center;padding:64px 0}
+  .final h2{margin-bottom:12px}
+  .final p{color:var(--muted);margin:0 auto 26px;max-width:34em}
+
+  .crisis{
+    background:var(--accent-soft);border:1px solid #d7e2d9;border-radius:14px;
+    padding:18px 20px;font-size:15.5px;color:#3c5147;margin:0 0 26px;
+  }
+  .crisis b{color:var(--ink)}
+
+  footer{padding:34px 0 56px;color:var(--muted);font-size:14.5px;border-top:1px solid var(--line)}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .u{font-family:ui-sans-serif,system-ui,sans-serif}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="badge">Онлайн · 50 минут · 1 500 ₽</div>
+    <h1>Пространство, где не нужно быть удобным</h1>
+    <p class="lead">
+      Консультирую нейроотличных взрослых: аутизм и жизнь после диагноза, СДВГ,
+      отношения и самопринятие. Можно молчать, можно писать — темп выбираете вы.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://t.me/caendeith">Написать в Telegram</a>
+      <a class="btn ghost" href="#how">Как проходит встреча</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>С чем приходят</h2>
+    <p class="sub">Это не список диагнозов, а список ситуаций. Если вашей здесь нет — просто напишите своими словами.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Аутизм и жизнь после диагноза</h3>
+        <p>Что делать с информацией о себе, как объяснять близким, как перестать считать себя «сломанным».</p>
+      </div>
+      <div class="card">
+        <h3>Сенсорная перегрузка и выгорание</h3>
+        <p>Когда обычный день забирает все силы, а восстановиться негде. Ищем, что именно вас истощает.</p>
+      </div>
+      <div class="card">
+        <h3>РАС, СДВГ и быт</h3>
+        <p>Рутина, дедлайны, бумаги, звонки. Разбираем на маленькие шаги, которые реально выполнимы.</p>
+      </div>
+      <div class="card">
+        <h3>Отношения и границы</h3>
+        <p>Как говорить «нет» без чувства вины, как договариваться, когда партнёр иначе устроен.</p>
+      </div>
+      <div class="card">
+        <h3>Самопринятие</h3>
+        <p>Разговор с внутренним критиком, который обычно говорит чужим голосом.</p>
+      </div>
+      <div class="card">
+        <h3>«Не знаю, с чего начать»</h3>
+        <p>Нормальный старт. На первой встрече мы просто разбираем, что сейчас происходит.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>Как проходит встреча</h2>
+    <p class="sub">Никаких анкет на десять страниц. Всё, что не хочется говорить голосом, можно написать.</p>
+    <ol class="steps">
+      <li><strong>Заявка</strong><span>Пишете в Telegram одним сообщением: как вас зовут и что происходит. Без подробностей, если не хочется.</span></li>
+      <li><strong>Знакомство, 15 минут, бесплатно</strong><span>Созваниваемся или переписываемся: проверяем, подходим ли друг другу, и о чём будет первая встреча.</span></li>
+      <li><strong>Сессия, 50 минут</strong><span>Видео или голос — как вам комфортнее. Камеру можно не включать.</span></li>
+      <li><strong>Договорённость</strong><span>В конце обсуждаем, есть ли смысл встречаться дальше. Если нет — я скажу прямо.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Формат и цена</h2>
+    <div class="price">
+      <div>
+        <div class="big">1 500 ₽</div>
+        <p class="sub" style="margin:6px 0 0">за встречу 50 минут, онлайн</p>
+      </div>
+      <div>
+        <ul>
+          <li>Знакомство 15 минут — бесплатно</li>
+          <li>Оплата после встречи, переводом</li>
+          <li>Отмена или перенос — за 24 часа, без вопросов</li>
+          <li>Если деньги — причина не начинать, скажите: найдём вариант</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Честно о границах</h2>
+    <p class="sub">Чтобы не было разочарований и неверных ожиданий.</p>
+    <ul class="bounds">
+      <li><b>Я учусь на психолога.</b> Консультирую в рамках учебной практики, моя работа обсуждается с кураторами программы.</li>
+      <li><b>Я не ставлю диагнозы и не назначаю лекарства.</b> Это работа психиатра. Если нужен диагноз — помогу понять, куда идти.</li>
+      <li><b>Я не работаю с острыми состояниями</b> — психоз, тяжёлая депрессия, зависимость, риск для жизни. С этим — к врачу, я подскажу, куда.</li>
+      <li><b>Всё, что вы рассказываете, остаётся между нами.</b> Исключение одно: прямая угроза жизни.</li>
+      <li><b>Если вам со мной не подойдёт</b> — я скажу об этом сам, а не буду тянуть встречи.</li>
+      <li><b>Я не обещаю «вылечить» аутизм.</b> Аутизм — не болезнь. Мы работаем с тем, что мешает вам жить.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Обо мне</h2>
+    <div class="about">
+      <div class="text">
+        <p>Мне 25 лет, живу в Ижевске. Учусь психологии и параллельно работаю аналитиком
+        данных — поэтому мне привычен язык структуры, ясных договорённостей и конкретных шагов.</p>
+        <p>Мне близка тема нейроотличий: я знаю, каково это — объяснять своё состояние людям,
+        которые с таким не сталкивались, и слышать «да ты просто не стараешься».</p>
+        <p>В работе опираюсь на письменную коммуникацию: перед встречей можно всё написать
+        текстом, а на встрече — молчать столько, сколько нужно.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Частые вопросы</h2>
+    <details>
+      <summary>Нужен ли диагноз, чтобы прийти?</summary>
+      <div class="ans">Нет. Можно прийти с подозрением, с диагнозом или вообще без темы — разберёмся вместе.</div>
+    </details>
+    <details>
+      <summary>Можно ли переписываться, а не говорить?</summary>
+      <div class="ans">Да. Сессия может проходить в текстовом чате — это полноценный формат, а не «упрощённый».</div>
+    </details>
+    <details>
+      <summary>Вы студент — это безопасно?</summary>
+      <div class="ans">Это значит, что я работаю в рамках программы обучения и обсуждаю свою работу с кураторами.
+      Всё, что касается ваших личных деталей, обсуждается обезличенно. Если для вас это важно — скажите заранее, обсудим.</div>
+    </details>
+    <details>
+      <summary>Сколько встреч понадобится?</summary>
+      <div class="ans">Честный ответ: я не знаю заранее. Иногда хватает двух-трёх встреч, чтобы разобрать конкретную ситуацию.
+      Иногда нужна регулярная работа месяцами. Мы будем сверяться после каждой встречи.</div>
+    </details>
+    <details>
+      <summary>Что если я не знаю, о чём говорить?</summary>
+      <div class="ans">Тогда начнём с этого. «Я не знаю, о чём говорить» — уже достаточная точка входа.</div>
+    </details>
+    <details>
+      <summary>Вы работаете с подростками?</summary>
+      <div class="ans">Нет, только со взрослыми 18+.</div>
+    </details>
+  </section>
+
+  <div class="final">
+    <h2>Напишите, что происходит</h2>
+    <p>Одно-два предложения — достаточно. Отвечаю в течение дня, по будням обычно быстрее.</p>
+    <div class="cta" style="justify-content:center">
+      <a class="btn primary" href="https://t.me/caendeith">Telegram @caendeith</a>
+      <a class="btn ghost" href="tel:+79524017643">+7 952 401-76-43</a>
+    </div>
+  </div>
+
+  <section style="padding:0 0 40px;border:0">
+    <div class="crisis">
+      <b>Если вам плохо прямо сейчас</b> и есть мысли о причинении вреда себе — это не то, что можно отложить до записи.
+      Позвоните <b>112</b> или на круглосуточную линию психологической помощи МЧС <b>8 800 775-17-17</b>.
+      Я не работаю с кризисами, но помогу найти того, кто работает.
+    </div>
+  </section>
+
+  <footer>
+    <p>Дамир Зиатдинов · Ижевск, работаю онлайн · <a href="https://t.me/caendeith">Telegram</a> · <a href="tel:+79524017643">+7 952 401-76-43</a></p>
+    <p class="u" style="font-size:13.5px">Сайт не является медицинской организацией и не оказывает медицинских услуг.
+    Консультирование не заменяет помощь врача.</p>
+  </footer>
+
+</div>
+</body>
+</html>
